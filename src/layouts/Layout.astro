@@ -1,22 +1,119 @@
+---
+import "@/styles/global.css";
+import {
+	getLangFromUrl,
+	useTranslations,
+	getLocalizedPath,
+	getDirection,
+} from "@/i18n/utils";
+import { languages, type Lang } from "@/i18n/ui";
+import LanguageSwitcher from "@/components/LanguageSwitcher.astro";
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const dir = getDirection(lang);
+
+const currentPath = Astro.url.pathname;
+
+// Helper to check if current path matches nav item
+const isActive = (href: string) => {
+	const localizedHref = getLocalizedPath(href, lang);
+	if (href === "/") {
+		return currentPath === localizedHref || currentPath === `/${lang}`;
+	}
+	return currentPath.startsWith(localizedHref);
+};
+
+const navItems = [
+	{ href: "/", label: t("nav.overview") },
+	{ href: "/projects", label: t("nav.projects") },
+	{ href: "/bills", label: t("nav.bills") },
+	{ href: "/budget", label: t("nav.budget") },
+];
+---
+
 <!doctype html>
-<html lang="en">
+<html lang={lang} dir={dir}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Mono:wght@400;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap"
+			rel="stylesheet"
+		/>
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
+		<title>PM</title>
 	</head>
 	<body>
-		<slot />
+		<div class="min-h-screen">
+			<!-- Top Navigation -->
+			<header class="border-b border-border">
+				<div class="max-w-6xl mx-auto px-6 py-8">
+					<nav class="flex items-center justify-between">
+						<div class="flex items-center gap-12">
+							<a
+								href={getLocalizedPath("/", lang)}
+								class="text-2xl font-bold tracking-tight">PM</a
+							>
+							<div class="flex items-center gap-8">
+								{
+									navItems.map((item) => (
+										<a
+											href={getLocalizedPath(
+												item.href,
+												lang,
+											)}
+											class:list={[
+												"text-sm font-medium transition-colors",
+												isActive(item.href)
+													? "text-foreground"
+													: "text-muted-foreground hover:text-foreground",
+											]}
+										>
+											{item.label}
+										</a>
+									))
+								}
+							</div>
+						</div>
+						<div class="flex items-center gap-4">
+							<LanguageSwitcher />
+							<button
+								id="sign-out-btn"
+								class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+							>
+								{t("auth.logout")}
+							</button>
+						</div>
+					</nav>
+				</div>
+			</header>
+
+			<!-- Main Content -->
+			<main class="max-w-6xl mx-auto px-6 py-16">
+				<slot />
+			</main>
+		</div>
+
+		<script>
+			document
+				.getElementById("sign-out-btn")
+				?.addEventListener("click", async () => {
+					try {
+						const response = await fetch("/api/logout", {
+							method: "POST",
+						});
+
+						if (response.ok) {
+							window.location.href = "/login";
+						}
+					} catch (error) {
+						console.error("Logout failed:", error);
+					}
+				});
+		</script>
 	</body>
 </html>
-
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>

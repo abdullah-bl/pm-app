@@ -1,0 +1,184 @@
+---
+import AuthLayout from "@/layouts/Auth.astro";
+---
+
+<AuthLayout>
+    <div class="flex flex-col gap-6">
+        <form id="login-form" class="min-w-96 mx-auto">
+            <div
+                data-slot="field-group"
+                class="group/field-group @container/field-group flex w-full flex-col gap-7"
+            >
+                <div class="flex flex-col items-center gap-2 text-center">
+                    <a
+                        href="#"
+                        class="flex flex-col items-center gap-2 font-medium"
+                    >
+                        <div
+                            class="flex size-8 items-center justify-center rounded-md"
+                        >
+                            <!-- GalleryVerticalEnd icon -->
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="size-6"
+                            >
+                                <path d="M7 2h10"></path>
+                                <path d="M5 6h14"></path>
+                                <rect width="18" height="12" x="3" y="10" rx="2"
+                                ></rect>
+                            </svg>
+                        </div>
+                        <span class="sr-only">PM</span>
+                    </a>
+                    <h1 class="text-xl font-bold">Welcome to PM</h1>
+                </div>
+
+                <!-- Email Field -->
+                <div
+                    role="group"
+                    data-slot="field"
+                    data-orientation="vertical"
+                    class="group/field flex w-full flex-col gap-3 [&>*]:w-full [&>.sr-only]:w-auto"
+                >
+                    <label
+                        for="email"
+                        data-slot="field-label"
+                        class="group/field-label peer/field-label flex w-fit gap-2 text-sm font-medium leading-snug"
+                    >
+                        Email
+                    </label>
+                    <input
+                        id="email"
+                        type="email"
+                        name="email"
+                        placeholder="m@example.com"
+                        required
+                        data-slot="input"
+                        class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+                    />
+                </div>
+
+                <!-- Password Field -->
+                <div
+                    role="group"
+                    data-slot="field"
+                    data-orientation="vertical"
+                    class="group/field flex w-full flex-col gap-3 [&>*]:w-full [&>.sr-only]:w-auto"
+                >
+                    <label
+                        for="password"
+                        data-slot="field-label"
+                        class="group/field-label peer/field-label flex w-fit gap-2 text-sm font-medium leading-snug"
+                    >
+                        Password
+                    </label>
+                    <input
+                        id="password"
+                        type="password"
+                        name="password"
+                        placeholder="••••••••"
+                        required
+                        data-slot="input"
+                        class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+                    />
+                </div>
+
+                <!-- Error Message -->
+                <div
+                    id="error-message"
+                    role="alert"
+                    data-slot="field-error"
+                    class="text-destructive text-sm font-normal hidden"
+                >
+                </div>
+
+                <!-- Submit Button -->
+                <div
+                    role="group"
+                    data-slot="field"
+                    data-orientation="vertical"
+                    class="group/field flex w-full flex-col gap-3 [&>*]:w-full [&>.sr-only]:w-auto"
+                >
+                    <button
+                        type="submit"
+                        data-slot="button"
+                        data-variant="default"
+                        data-size="default"
+                        class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3"
+                    >
+                        Login
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- <p
+            data-slot="field-description"
+            class="text-muted-foreground text-sm leading-normal font-normal px-6 text-center [&>a:hover]:text-primary [&>a]:underline [&>a]:underline-offset-4"
+        >
+            By clicking continue, you agree to our <a href="#"
+                >Terms of Service</a
+            > and
+            <a href="#">Privacy Policy</a>.
+        </p> -->
+    </div>
+
+    <script>
+        const form = document.getElementById("login-form") as HTMLFormElement;
+        const errorMessage = document.getElementById(
+            "error-message",
+        ) as HTMLDivElement;
+
+        function showError(message: string) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove("hidden");
+        }
+
+        function hideError() {
+            errorMessage.textContent = "";
+            errorMessage.classList.add("hidden");
+        }
+
+        form?.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            hideError();
+
+            const formData = new FormData(form);
+            const email = formData.get("email");
+            const password = formData.get("password");
+
+            if (!email || !password) {
+                showError("Please enter email and password");
+                return;
+            }
+
+            try {
+                const response = await fetch("/api/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ email, password }),
+                });
+                const data = await response.json();
+                console.log(data);
+
+                if (data.success) {
+                    window.location.href = "/";
+                } else {
+                    showError(data.error);
+                }
+            } catch (error) {
+                showError("An unexpected error occurred");
+            }
+        });
+    </script>
+</AuthLayout>

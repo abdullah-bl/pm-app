@@ -1,0 +1,144 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import type { Bill } from "@/types";
+import {
+	getLangFromUrl,
+	useTranslations,
+	formatCurrency,
+	formatDateFull,
+} from "@/i18n/utils";
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const pb = Astro.locals.pb;
+
+let bills: Bill[] = [];
+
+try {
+	const result = await pb.collection("bills").getFullList<Bill>({
+		sort: "due_date",
+		expand: "budget",
+	});
+	bills = result;
+} catch (e) {
+	console.error("Error fetching bills:", e);
+}
+
+const totalAmount = bills.reduce((sum, b) => sum + (b.amount || 0), 0);
+
+const now = new Date();
+const upcomingBills = bills.filter(
+	(b) => b.due_date && new Date(b.due_date) >= now,
+);
+const overdueBills = bills.filter(
+	(b) => b.due_date && new Date(b.due_date) < now,
+);
+---
+
+<Layout>
+	<div class="space-y-24">
+		<!-- Header -->
+		<section>
+			<h1 class="page-title">{t("bills.title")}</h1>
+			<p class="text-muted-foreground text-lg">
+				{t("bills.subtitle")}
+			</p>
+		</section>
+
+		<!-- Stats -->
+		<section>
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-16">
+				<div>
+					<p class="section-title">{t("bills.title")}</p>
+					<p class="stat-number">{bills.length}</p>
+				</div>
+				<div>
+					<p class="section-title">{t("dashboard.upcomingBills")}</p>
+					<p class="stat-number">{upcomingBills.length}</p>
+				</div>
+				<div>
+					<p class="section-title">{t("table.amount")}</p>
+					<p class="stat-number">
+						{formatCurrency(totalAmount, lang)}
+					</p>
+				</div>
+			</div>
+		</section>
+
+		<!-- Bills List -->
+		<section>
+			<h2 class="section-title">{t("bills.title")}</h2>
+
+			{
+				bills.length === 0 ? (
+					<p class="text-muted-foreground py-8">
+						{t("bills.noBillsFound")}
+					</p>
+				) : (
+					<table class="data-table">
+						<thead>
+							<tr>
+								<th>{t("table.ref")}</th>
+								<th>{t("table.bill")}</th>
+								<th>{t("table.due")}</th>
+								<th class="text-right">{t("table.amount")}</th>
+							</tr>
+						</thead>
+						<tbody>
+							{bills.map((bill) => {
+								const isOverdue =
+									bill.due_date &&
+									new Date(bill.due_date) < now;
+								return (
+									<tr>
+										<td class="mono text-muted-foreground text-sm">
+											{bill.ref}
+										</td>
+										<td>
+											<p class="font-medium">
+												{bill.name}
+											</p>
+											{bill.note && (
+												<p class="text-sm text-muted-foreground line-clamp-1 max-w-xs">
+													{bill.note}
+												</p>
+											)}
+										</td>
+										<td>
+											{bill.due_date ? (
+												<span
+													class:list={[
+														"text-sm",
+														isOverdue
+															? "text-destructive font-medium"
+															: "text-muted-foreground",
+													]}
+												>
+													{formatDateFull(
+														bill.due_date,
+														lang,
+													)}
+												</span>
+											) : (
+												<span class="text-muted-foreground">
+													—
+												</span>
+											)}
+										</td>
+										<td class="text-right font-medium mono">
+											{formatCurrency(
+												bill.amount || 0,
+												lang,
+											)}
+										</td>
+									</tr>
+								);
+							})}
+						</tbody>
+					</table>
+				)
+			}
+		</section>
+	</div>
+</Layout>

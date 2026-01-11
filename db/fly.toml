@@ -1,0 +1,44 @@
+# fly.toml - PocketBase configuration for Fly.io
+# https://fly.io/docs/reference/configuration/
+
+app = 'pm-db'
+primary_region = 'sin'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  # PocketBase will use pb_data in the mounted volume
+  PB_DATA_DIR = '/pb/pb_data'
+
+# Mount persistent volume for SQLite database
+[mounts]
+  source = 'pb_data'
+  destination = '/pb/pb_data'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Keep at least 1 machine running for database availability
+  auto_stop_machines = 'suspend'
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+# Health check for PocketBase
+[http_service.concurrency]
+  type = 'requests'
+  hard_limit = 250
+  soft_limit = 200
+
+[[http_service.checks]]
+  grace_period = '10s'
+  interval = '30s'
+  method = 'GET'
+  timeout = '5s'
+  path = '/api/health'
+
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1

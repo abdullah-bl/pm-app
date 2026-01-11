@@ -1,0 +1,341 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import type { Project, Phase } from "@/types";
+import {
+	getLangFromUrl,
+	useTranslations,
+	getLocalizedPath,
+	formatCurrency,
+	formatDateFull,
+} from "@/i18n/utils";
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const pb = Astro.locals.pb;
+
+// Get filter params from URL
+const url = new URL(Astro.request.url);
+const filterPhase = url.searchParams.get("phase") || "";
+const filterActive = url.searchParams.get("active") || "";
+const filterYear = url.searchParams.get("year") || "";
+
+let allProjects: Project[] = [];
+let phases: Phase[] = [];
+
+try {
+	const [projectsRes, phasesRes] = await Promise.all([
+		pb.collection("projects").getFullList<Project>({
+			sort: "-ref",
+			expand: "phase,assignee",
+		}),
+		pb.collection("phases").getFullList<Phase>({
+			sort: "order",
+		}),
+	]);
+	allProjects = projectsRes;
+	phases = phasesRes;
+} catch (e) {
+	console.error("Error fetching projects:", e);
+}
+
+// Get unique years from project dates
+const getYearFromDate = (date: string) =>
+	date ? new Date(date).getFullYear() : null;
+const projectYears = new Set<number>();
+allProjects.forEach((p) => {
+	const startYear = getYearFromDate(p.start_date);
+	const endYear = getYearFromDate(p.end_date);
+	if (startYear) projectYears.add(startYear);
+	if (endYear) projectYears.add(endYear);
+});
+const availableYears = [...projectYears].sort((a, b) => b - a);
+
+// Apply filters
+let projects = allProjects;
+
+if (filterPhase) {
+	projects = projects.filter((p) => p.phase === filterPhase);
+}
+
+if (filterActive === "true") {
+	projects = projects.filter((p) => p.active);
+} else if (filterActive === "false") {
+	projects = projects.filter((p) => !p.active);
+}
+
+if (filterYear) {
+	const year = parseInt(filterYear);
+	projects = projects.filter((p) => {
+		const startYear = getYearFromDate(p.start_date);
+		const endYear = getYearFromDate(p.end_date);
+		if (startYear && endYear) {
+			return startYear <= year && year <= endYear;
+		} else if (startYear) {
+			return startYear <= year;
+		} else if (endYear) {
+			return year <= endYear;
+		}
+		return true;
+	});
+}
+
+const activeCount = projects.filter((p) => p.active).length;
+const totalValue = projects.reduce((sum, p) => sum + (p.total || 0), 0);
+
+// Get base path for filter navigation
+const basePath = getLocalizedPath("/projects", lang);
+---
+
+<Layout>
+	<div class="space-y-24">
+		<!-- Header with Filters -->
+		<section>
+			<div class="flex items-start justify-between gap-4 flex-wrap">
+				<div>
+					<h1 class="page-title">{t("projects.title")}</h1>
+					<p class="text-muted-foreground text-lg">
+						{t("projects.subtitle")}
+					</p>
+				</div>
+			</div>
+
+			<!-- Filters -->
+			<form
+				id="filters"
+				class="flex flex-wrap items-center gap-4 mt-6 pt-6 border-t border-border"
+			>
+				<div class="flex items-center gap-2">
+					<span class="text-sm text-muted-foreground"
+						>{t("filter.year")}</span
+					>
+					<select
+						name="year"
+						class="border border-border rounded-md px-3 py-2 text-sm bg-background font-mono filter-select"
+					>
+						<option value="">{t("filter.all")}</option>
+						{
+							availableYears.map((year) => (
+								<option
+									value={String(year)}
+									selected={filterYear === String(year)}
+								>
+									{year}
+								</option>
+							))
+						}
+					</select>
+				</div>
+
+				<div class="flex items-center gap-2">
+					<span class="text-sm text-muted-foreground"
+						>{t("filter.phase")}</span
+					>
+					<select
+						name="phase"
+						class="border border-border rounded-md px-3 py-2 text-sm bg-background filter-select"
+					>
+						<option value="">{t("filter.all")}</option>
+						{
+							phases.map((phase) => (
+								<option
+									value={phase.id}
+									selected={filterPhase === phase.id}
+								>
+									{phase.name}
+								</option>
+							))
+						}
+					</select>
+				</div>
+
+				<div class="flex items-center gap-2">
+					<span class="text-sm text-muted-foreground"
+						>{t("filter.status")}</span
+					>
+					<select
+						name="active"
+						class="border border-border rounded-md px-3 py-2 text-sm bg-background filter-select"
+					>
+						<option value="">{t("filter.all")}</option>
+						<option value="true" selected={filterActive === "true"}
+							>{t("filter.active")}</option
+						>
+						<option
+							value="false"
+							selected={filterActive === "false"}
+							>{t("filter.inactive")}</option
+						>
+					</select>
+				</div>
+
+				{
+					(filterPhase || filterActive || filterYear) && (
+						<a
+							href={basePath}
+							class="text-sm text-muted-foreground hover:text-foreground transition-colors"
+						>
+							{t("projects.clearFilters")}
+						</a>
+					)
+				}
+			</form>
+
+			<script define:vars={{ basePath }}>
+				document
+					.querySelectorAll(".filter-select")
+					.forEach((select) => {
+						select.addEventListener("change", () => {
+							const form = document.getElementById("filters");
+							const params = new URLSearchParams();
+							new FormData(form).forEach((value, key) => {
+								if (value) params.set(key, value.toString());
+							});
+							window.location.href =
+								basePath +
+								(params.toString()
+									? "?" + params.toString()
+									: "");
+						});
+					});
+			</script>
+		</section>
+
+		<!-- Stats -->
+		<section>
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-16">
+				<div>
+					<p class="section-title">{t("projects.showing")}</p>
+					<p class="stat-number">{projects.length}</p>
+				</div>
+				<div>
+					<p class="section-title">{t("projects.active")}</p>
+					<p class="stat-number">{activeCount}</p>
+				</div>
+				<div>
+					<p class="section-title">{t("projects.totalValue")}</p>
+					<p class="stat-number">
+						{formatCurrency(totalValue, lang)}
+					</p>
+				</div>
+			</div>
+		</section>
+
+		<!-- Projects List -->
+		<section>
+			<h2 class="section-title">{t("projects.allProjects")}</h2>
+
+			{
+				projects.length === 0 ? (
+					<p class="text-muted-foreground py-8">
+						{t("projects.noProjectsFound")}
+					</p>
+				) : (
+					<table class="data-table">
+						<thead>
+							<tr>
+								<th>{t("table.ref")}</th>
+								<th>{t("table.project")}</th>
+								<th>{t("table.phase")}</th>
+								<th>{t("table.timeline")}</th>
+								<th>{t("table.team")}</th>
+								<th class="text-right">{t("table.status")}</th>
+							</tr>
+						</thead>
+						<tbody>
+							{projects.map((project) => (
+								<tr>
+									<td class="mono text-muted-foreground text-sm">
+										{project.slug || project.ref}
+									</td>
+									<td>
+										<p class="font-medium">
+											{project.name}
+										</p>
+									</td>
+									<td>
+										{project.expand?.phase ? (
+											<span class="badge badge-info">
+												{project.expand.phase.name}
+											</span>
+										) : (
+											<span class="text-muted-foreground">
+												—
+											</span>
+										)}
+									</td>
+									<td class="text-sm text-muted-foreground">
+										<div class="space-y-0.5">
+											<p>
+												{project.start_date
+													? formatDateFull(
+															project.start_date,
+															lang,
+														)
+													: t("common.tbd")}
+											</p>
+											<p>
+												→{" "}
+												{project.end_date
+													? formatDateFull(
+															project.end_date,
+															lang,
+														)
+													: t("common.tbd")}
+											</p>
+										</div>
+									</td>
+									<td>
+										{project.expand?.assignee &&
+										project.expand.assignee.length > 0 ? (
+											<div class="flex -space-x-2">
+												{project.expand.assignee
+													.slice(0, 3)
+													.map((user) => (
+														<div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium border-2 border-background">
+															{user.name?.charAt(
+																0,
+															) ||
+																user.email?.charAt(
+																	0,
+																)}
+														</div>
+													))}
+												{project.expand.assignee
+													.length > 3 && (
+													<div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium border-2 border-background">
+														+
+														{project.expand.assignee
+															.length - 3}
+													</div>
+												)}
+											</div>
+										) : (
+											<span class="text-muted-foreground">
+												—
+											</span>
+										)}
+									</td>
+									<td class="text-right">
+										<span
+											class:list={[
+												"badge",
+												project.active
+													? "badge-active"
+													: "badge-inactive",
+											]}
+										>
+											{project.active
+												? t("filter.active")
+												: t("filter.inactive")}
+										</span>
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				)
+			}
+		</section>
+	</div>
+</Layout>

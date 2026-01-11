@@ -1,0 +1,7 @@
+# Works with IP address - no SSL (HTTP only)
+# Access app at: http://YOUR_SERVER_IP
+# Access PocketBase at: http://YOUR_SERVER_IP:8090
+
+:80 {
+    reverse_proxy app:4321
+}

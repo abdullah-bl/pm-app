@@ -1,0 +1,43 @@
+---
+import { languages, type Lang } from "@/i18n/ui";
+import { getLangFromUrl } from "@/i18n/utils";
+
+const currentLang = getLangFromUrl(Astro.url);
+const pathname = Astro.url.pathname;
+
+// Get the route without locale prefix
+function getRouteWithoutLocale(): string {
+  const parts = pathname.split("/").filter(Boolean);
+  // If first part is a locale, remove it
+  if (parts[0] === "en" || parts[0] === "ar") {
+    parts.shift();
+  }
+  return "/" + parts.join("/");
+}
+
+const currentRoute = getRouteWithoutLocale();
+
+// Build paths for each language (always include locale prefix with [locale] routing)
+function getLocalePath(lang: Lang): string {
+  return `/${lang}${currentRoute === "/" ? "" : currentRoute}`;
+}
+---
+
+<div class="flex items-center gap-1 text-sm">
+  {
+    Object.entries(languages).map(([lang, label]) => (
+      <a
+        href={getLocalePath(lang as Lang)}
+        class:list={[
+          "px-2 py-1 rounded-md transition-colors",
+          currentLang === lang
+            ? "bg-foreground text-background font-medium"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted",
+        ]}
+        aria-current={currentLang === lang ? "page" : undefined}
+      >
+        {lang === "ar" ? "ع" : "EN"}
+      </a>
+    ))
+  }
+</div>

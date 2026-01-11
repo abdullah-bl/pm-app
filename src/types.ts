@@ -1,0 +1,147 @@
+import type { RecordService } from 'pocketbase';
+import type PocketBase from 'pocketbase';
+
+export interface User {
+    id: string;
+    name: string;
+    email: string;
+}
+
+export interface Budget {
+    id: string;
+    name: string;
+    ref: string;
+    description: string;
+    created: string;
+    updated: string;
+}
+
+export interface BudgetItem {
+    id: string;
+    budget_id: string;
+    year: number;
+    cash: number;
+    cost: number;
+    note: string;
+    created: string;
+    updated: string;
+    expand?: {
+        budget: Budget;
+    }
+}
+
+export interface Transfer {
+    id: string;
+    from: string;
+    to: string;
+    cash: number;
+    cost: number;
+    note: string;
+    created: string;
+    updated: string;
+    files: string[];
+    expand?: {
+        from: Budget;
+        to: Budget;
+    }
+}
+
+export interface Obligation {
+    id: string;
+    ref: string;
+    cash: number;
+    cost: number;
+    note: string;
+    date: string;
+    budget_id: string;
+    project_id: string;
+    bill_id: string;
+    created: string;
+    updated: string;
+    files: string[];
+    expand?: {
+        project: Project;
+        bill: Bill;
+        budget: Budget;
+    }
+}
+
+export interface Phase {
+    id: string;
+    name: string;
+    description: string;
+    order: number;
+    created: string;
+    updated: string;
+}
+
+
+export interface Bill {
+    id: string;
+    ref: string;
+    name: string;
+    budget_id: string; // 
+    amount: number; // 
+    due_date: string;
+    note: string;
+    created: string;
+    updated: string;
+    files: string[];
+    expand?: {
+        budget: Budget;
+    }
+}
+
+export interface Project {
+    id: string;
+    ref: string; // 1234
+    slug: string; // PRO-123
+    name: string;
+    duration: string; // 
+    start_date: string;
+    end_date: string;
+    total: number; // 
+    phase: string; // 
+    files: string[]; // 
+    created: string;
+    updated: string;
+    assignee: string[];
+    active: boolean;
+    expand?: {
+        phase: Phase;
+        assignee: User[];
+    }
+}
+
+export interface Payment {
+    id: string;
+    ref: string;
+    budget_id: string;
+    amount: number;
+    note: string;
+    bill_id: string;
+    obligation_id: string;
+    project_id: string;
+    created: string;
+    updated: string;
+    files: string[];
+    expand?: {
+        budget: Budget;
+        bill: Bill;
+        obligation: Obligation;
+        project: Project;
+    }
+}
+
+
+export interface TypedPocketBase extends PocketBase {
+    collection(idOrName: string): RecordService // default fallback for any other collection
+    collection(idOrName: 'budgets'): RecordService<Budget>
+    collection(idOrName: 'budget_items'): RecordService<BudgetItem>
+    collection(idOrName: 'obligations'): RecordService<Obligation>
+    collection(idOrName: 'phases'): RecordService<Phase>
+    collection(idOrName: 'bills'): RecordService<Bill>
+    collection(idOrName: 'projects'): RecordService<Project>
+    collection(idOrName: 'payments'): RecordService<Payment>
+    collection(idOrName: 'transfers'): RecordService<Transfer>
+}

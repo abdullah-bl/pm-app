@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.astro/
+
+# Environment files
+.env
+.env.*
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+
+# Database (mounted separately)
+db/pb_data/
+db/pocketbase
+
+# Documentation
+*.md
+llms.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker files (no need to copy these into the image)
+Dockerfile
+docker-compose.yml
+.dockerignore

@@ -1,0 +1,41 @@
+# fly.toml - Fly.io configuration for pm-app
+# https://fly.io/docs/reference/configuration/
+
+app = 'pm-app'
+primary_region = 'sin'
+
+[build]
+  dockerfile = 'Dockerfile'
+  [build.args]
+    PUBLIC_POCKETBASE_URL = 'https://pm-db.fly.dev'
+
+[env]
+  NODE_ENV = 'production'
+  HOST = '0.0.0.0'
+  PORT = '4321'
+  PUBLIC_POCKETBASE_URL = 'https://pm-db.fly.dev'
+
+[http_service]
+  internal_port = 4321
+  force_https = true
+  auto_stop_machines = 'suspend'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+  [http_service.concurrency]
+    type = 'requests'
+    hard_limit = 250
+    soft_limit = 200
+
+[[http_service.checks]]
+  grace_period = '30s'
+  interval = '15s'
+  method = 'GET'
+  timeout = '10s'
+  path = '/api/health'
+
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1
