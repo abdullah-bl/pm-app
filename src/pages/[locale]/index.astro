@@ -96,58 +96,40 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 ---
 
 <Layout>
-	<div class="space-y-24">
+	<div class="space-y-20 md:space-y-28">
 		<!-- Header -->
 		<section>
-			<p class="section-title">{currentYear} {t("dashboard.overview")}</p>
-			<h1 class="page-title mt-2">{t("dashboard.title")}</h1>
+			<p class="section-title mb-3">
+				{currentYear}
+				{t("dashboard.overview")}
+			</p>
+			<h1 class="page-title">{t("dashboard.title")}</h1>
 		</section>
 
-		<!-- Budget Stats -->
+		<!-- Budget Summary - Primary Stats -->
 		<section>
-			<h2 class="section-title mb-8">{t("dashboard.budgetSummary")}</h2>
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+			<h2 class="section-title">{t("dashboard.budgetSummary")}</h2>
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
+				<!-- Cash Budget -->
 				<div>
-					<p class="text-lg text-muted-foreground mb-1">
-						{t("budget.cash")}
-					</p>
-					<p class="text-3xl md:text-4xl font-bold mono tabular-nums">
+					<span class="stat-label">{t("budget.cash")}</span>
+					<p class="stat-number arshid">
 						{formatCurrency(totalBudgetCash, lang)}
 					</p>
 				</div>
+				<!-- Obligated -->
 				<div>
-					<p class="text-lg text-muted-foreground mb-1">
-						{t("budget.cost")}
-					</p>
-					<p
-						class="text-3xl md:text-4xl font-bold mono tabular-nums text-muted-foreground"
-					>
-						{formatCurrency(totalBudgetCost, lang)}
-					</p>
-				</div>
-				<div>
-					<p class="text-lg text-muted-foreground mb-1">
-						{t("budget.obligatedCash")}
-					</p>
-					<p class="text-3xl md:text-4xl font-bold mono tabular-nums">
+					<span class="stat-label">{t("budget.obligatedCash")}</span>
+					<p class="stat-number arshid">
 						{formatCurrency(totalObligatedCash, lang)}
 					</p>
 				</div>
+				<!-- Remaining -->
 				<div>
-					<p class="text-lg text-muted-foreground mb-1">
-						{t("budget.obligatedCost")}
-					</p>
-					<p class="text-3xl md:text-4xl font-bold mono tabular-nums">
-						{formatCurrency(totalObligatedCost, lang)}
-					</p>
-				</div>
-				<div>
-					<p class="text-lg text-muted-foreground mb-1">
-						{t("budget.remainingCash")}
-					</p>
+					<span class="stat-label">{t("budget.remainingCash")}</span>
 					<p
 						class:list={[
-							"text-3xl md:text-4xl font-bold mono tabular-nums",
+							"stat-number arshid",
 							budgetRemainingCash < 0
 								? "text-destructive"
 								: "text-emerald-600",
@@ -156,11 +138,27 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 						{formatCurrency(budgetRemainingCash, lang)}
 					</p>
 				</div>
+			</div>
+
+			<!-- Cost Budget - Secondary Stats -->
+			<div
+				class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-16 mt-12 pt-8 border-t border-border"
+			>
 				<div>
-					<p class="text-lg text-muted-foreground mb-1">
-						{t("budget.remainingCost")}
+					<span class="stat-label">{t("budget.cost")}</span>
+					<p class="stat-number-md arshid">
+						{formatCurrency(totalBudgetCost, lang)}
 					</p>
-					<p class="text-3xl md:text-4xl font-bold mono tabular-nums">
+				</div>
+				<div>
+					<span class="stat-label">{t("budget.obligatedCost")}</span>
+					<p class="stat-number-md arshid">
+						{formatCurrency(totalObligatedCost, lang)}
+					</p>
+				</div>
+				<div>
+					<span class="stat-label">{t("budget.remainingCost")}</span>
+					<p class="stat-number-md arshid">
 						{formatCurrency(budgetRemainingCost, lang)}
 					</p>
 				</div>
@@ -169,52 +167,45 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 
 		<!-- Activity Stats -->
 		<section>
-			<h2 class="section-title mb-8">{t("dashboard.activity")}</h2>
-			<div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+			<h2 class="section-title">{t("dashboard.activity")}</h2>
+			<div class="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-16">
 				<div>
-					<p class="text-sm text-muted-foreground mb-1">
-						{t("budget.payments")}
-					</p>
-					<p class="text-3xl md:text-4xl font-bold mono tabular-nums">
+					<span class="stat-label">{t("budget.payments")}</span>
+					<p class="stat-number-md arshid">
 						{formatCurrency(totalPaid, lang)}
 					</p>
-					<p class="text-xs text-muted-foreground mt-1">
+					<p class="text-sm text-muted-foreground mt-2">
 						{yearPayments.length}
 						{t("budget.transactions")}
 					</p>
 				</div>
 				<div>
-					<p class="text-sm text-muted-foreground mb-1">
-						{t("budget.obligations")}
-					</p>
-					<p class="text-3xl md:text-4xl font-bold mono tabular-nums">
-						{formatCurrency(totalObligatedCash, lang)}
-					</p>
-					<p class="text-xs text-muted-foreground mt-1">
+					<span class="stat-label">{t("budget.obligations")}</span>
+					<p class="stat-number-md arshid">
 						{yearObligations.length}
+					</p>
+					<p class="text-sm text-muted-foreground mt-2">
 						{t("budget.commitments")}
 					</p>
 				</div>
 				<div>
-					<p class="text-sm text-muted-foreground mb-1">
-						{t("dashboard.upcomingBills")}
-					</p>
-					<p class="text-3xl md:text-4xl font-bold mono tabular-nums">
+					<span class="stat-label"
+						>{t("dashboard.upcomingBills")}</span
+					>
+					<p class="stat-number-md arshid">
 						{formatCurrency(totalBills, lang)}
 					</p>
-					<p class="text-xs text-muted-foreground mt-1">
+					<p class="text-sm text-muted-foreground mt-2">
 						{upcomingBills.length}
 						{t("budget.pending")}
 					</p>
 				</div>
 				<div>
-					<p class="text-sm text-muted-foreground mb-1">
-						{t("dashboard.activeProjects")}
-					</p>
-					<p class="text-3xl md:text-4xl font-bold mono tabular-nums">
-						{projects.length}
-					</p>
-					<p class="text-xs text-muted-foreground mt-1">
+					<span class="stat-label"
+						>{t("dashboard.activeProjects")}</span
+					>
+					<p class="stat-number-md">{projects.length}</p>
+					<p class="text-sm text-muted-foreground mt-2">
 						{formatCurrency(totalProjectValue, lang)}
 						{t("budget.value")}
 					</p>
@@ -224,7 +215,7 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 
 		<!-- Recent Projects -->
 		<section>
-			<div class="flex items-center justify-between mb-8">
+			<div class="flex items-center justify-between mb-6">
 				<h2 class="section-title mb-0!">
 					{t("dashboard.activeProjects")}
 				</h2>
@@ -232,13 +223,13 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 					href={getLocalizedPath("/projects?active=true", lang)}
 					class="text-sm text-muted-foreground hover:text-foreground transition-colors"
 				>
-					{t("dashboard.viewAll")}
+					{t("dashboard.viewAll")} →
 				</a>
 			</div>
 
 			{
 				recentProjects.length === 0 ? (
-					<p class="text-muted-foreground py-8">
+					<p class="text-muted-foreground py-12 text-center">
 						{t("dashboard.noActiveProjects")}
 					</p>
 				) : (
@@ -254,16 +245,19 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 							{recentProjects.map((project) => (
 								<tr>
 									<td>
-										<p class="font-medium">
+										<p class="font-medium text-base leading-snug">
 											{project.name}
 										</p>
-										<p class="text-sm text-muted-foreground mono">
+										<p class="text-sm text-muted-foreground mono mt-1">
 											{project.slug || project.ref}
 										</p>
 									</td>
-									<td>
+									<td class="align-middle">
 										{project.expand?.phase ? (
-											<span class="badge badge-info">
+											<span
+												class="badge"
+												style={`background-color: ${project.expand.phase.color}20; color: ${project.expand.phase.color};`}
+											>
 												{project.expand.phase.name}
 											</span>
 										) : (
@@ -272,7 +266,7 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 											</span>
 										)}
 									</td>
-									<td class="text-right font-medium mono">
+									<td class="text-right font-medium arshid text-base align-middle">
 										{formatCurrency(
 											project.total || 0,
 											lang,
@@ -288,7 +282,7 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 
 		<!-- Upcoming Bills -->
 		<section>
-			<div class="flex items-center justify-between mb-8">
+			<div class="flex items-center justify-between mb-6">
 				<h2 class="section-title mb-0!">
 					{t("dashboard.upcomingBills")}
 				</h2>
@@ -296,13 +290,13 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 					href={getLocalizedPath("/bills", lang)}
 					class="text-sm text-muted-foreground hover:text-foreground transition-colors"
 				>
-					{t("dashboard.viewAll")}
+					{t("dashboard.viewAll")} →
 				</a>
 			</div>
 
 			{
 				upcomingBills.length === 0 ? (
-					<p class="text-muted-foreground py-8">
+					<p class="text-muted-foreground py-12 text-center">
 						{t("dashboard.noUpcomingBills")}
 					</p>
 				) : (
@@ -318,19 +312,21 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 							{upcomingBills.slice(0, 5).map((bill) => (
 								<tr>
 									<td>
-										<p class="font-medium">{bill.name}</p>
+										<p class="font-medium text-base">
+											{bill.name}
+										</p>
 										{bill.note && (
-											<p class="text-sm text-muted-foreground line-clamp-1">
+											<p class="text-sm text-muted-foreground line-clamp-1 mt-1">
 												{bill.note}
 											</p>
 										)}
 									</td>
-									<td class="text-muted-foreground">
+									<td class="text-muted-foreground align-middle">
 										{bill.due_date
 											? formatDate(bill.due_date, lang)
 											: "—"}
 									</td>
-									<td class="text-right font-medium mono">
+									<td class="text-right font-medium arshid text-base align-middle">
 										{formatCurrency(bill.amount || 0, lang)}
 									</td>
 								</tr>
@@ -343,7 +339,7 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 
 		<!-- Recent Payments -->
 		<section>
-			<div class="flex items-center justify-between mb-8">
+			<div class="flex items-center justify-between mb-6">
 				<h2 class="section-title mb-0!">
 					{t("dashboard.recentPayments")}
 				</h2>
@@ -351,13 +347,13 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 					href={getLocalizedPath("/budget", lang)}
 					class="text-sm text-muted-foreground hover:text-foreground transition-colors"
 				>
-					{t("dashboard.viewAll")}
+					{t("dashboard.viewAll")} →
 				</a>
 			</div>
 
 			{
 				yearPayments.length === 0 ? (
-					<p class="text-muted-foreground py-8">
+					<p class="text-muted-foreground py-12 text-center">
 						{t("dashboard.noPaymentsThisYear")}
 					</p>
 				) : (
@@ -372,13 +368,13 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 						<tbody>
 							{yearPayments.slice(0, 5).map((payment) => (
 								<tr>
-									<td class="mono text-muted-foreground">
+									<td class="mono text-muted-foreground align-middle">
 										{payment.ref || "—"}
 									</td>
-									<td class="text-muted-foreground">
+									<td class="text-muted-foreground align-middle">
 										{formatDate(payment.created, lang)}
 									</td>
-									<td class="text-right font-medium mono">
+									<td class="text-right font-medium arshid text-base align-middle">
 										{formatCurrency(
 											payment.amount || 0,
 											lang,

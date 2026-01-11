@@ -41,10 +41,10 @@ export function getDirection(lang: Lang): "ltr" | "rtl" {
 
 // Format currency based on locale
 export function formatCurrency(amount: number, lang: Lang): string {
-  const locale = lang === "ar" ? "ar-SA" : "en-US";
-  return new Intl.NumberFormat('en-US', {
+  const locale = lang === "ar" ? "en-SA" : "en-US";
+  return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency: lang === "ar" ? "SAR" : "USD",
+    currency: "USD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);

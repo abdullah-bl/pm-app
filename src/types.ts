@@ -71,6 +71,7 @@ export interface Phase {
     name: string;
     description: string;
     order: number;
+    color: string; // 
     created: string;
     updated: string;
 }

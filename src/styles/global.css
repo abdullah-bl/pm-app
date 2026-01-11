@@ -22,6 +22,14 @@
 ;
 
 
+@font-face {
+	font-family: 'Arshid';
+	src: url('/fonts/Arshid.otf') format('truetype');
+}
+
+;
+
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -135,19 +143,38 @@
 	@apply text-left;
 }
 
-/* Large display numbers */
+/* Large display numbers - 60px for scannable metrics */
 .stat-number {
-	@apply text-6xl font-bold tracking-tight tabular-nums font-sans;
+	@apply text-5xl md:text-6xl font-bold tracking-tight tabular-nums font-mono leading-none;
 }
 
-/* Section title */
+/* Medium stat numbers for secondary metrics */
+.stat-number-md {
+	@apply text-3xl md:text-4xl font-bold tracking-tight tabular-nums font-mono leading-none;
+}
+
+.arshid {
+	font-family: 'Arshid', sans-serif;
+}
+
+/* Section title - 12px uppercase with wide tracking */
 .section-title {
-	@apply text-xs font-medium uppercase tracking-widest text-muted-foreground mb-4;
+	@apply text-xs font-medium uppercase tracking-widest text-muted-foreground mb-6;
 }
 
-/* Large page title */
+/* Large page title - 36px bold with tight tracking */
 .page-title {
-	@apply text-4xl font-bold tracking-tight mb-2;
+	@apply text-3xl md:text-4xl font-bold tracking-tight leading-tight;
+}
+
+/* Page subtitle */
+.page-subtitle {
+	@apply text-lg text-muted-foreground mt-2;
+}
+
+/* Stat label - positioned above stat numbers */
+.stat-label {
+	@apply text-sm text-muted-foreground mb-2 block;
 }
 
 /* Subtle label */
@@ -155,31 +182,36 @@
 	@apply text-sm text-muted-foreground;
 }
 
-/* Table styling */
+/* Table styling - generous vertical padding for readability */
 .data-table {
 	@apply w-full;
 }
 
 .data-table th {
-	@apply text-left text-xs font-medium uppercase tracking-wider text-muted-foreground pb-4 border-b border-border;
+	@apply text-left text-xs font-medium uppercase tracking-widest text-muted-foreground pb-4 border-b border-border;
 }
 
 .data-table td {
-	@apply py-5 border-b border-border align-top;
+	@apply py-6 border-b border-border align-top;
 }
 
 .data-table tr:last-child td {
 	@apply border-b-0;
 }
 
-/* Mono numbers */
+/* Clickable table rows */
+.data-table tr.clickable {
+	@apply cursor-pointer transition-colors hover:bg-muted/50;
+}
+
+/* Mono numbers - for tabular alignment */
 .mono {
 	@apply font-mono tabular-nums;
 }
 
-/* Status badges */
+/* Status badges - small pill-shaped indicators */
 .badge {
-	@apply inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full;
+	@apply inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full;
 }
 
 .badge-active {
@@ -192,4 +224,17 @@
 
 .badge-info {
 	@apply bg-blue-100 text-blue-800;
+}
+
+/* Status dot indicator */
+.status-dot {
+	@apply w-2.5 h-2.5 rounded-full inline-block;
+}
+
+.status-dot-active {
+	@apply bg-emerald-500;
+}
+
+.status-dot-inactive {
+	@apply bg-neutral-300;
 }

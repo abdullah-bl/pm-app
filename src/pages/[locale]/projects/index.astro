@@ -88,13 +88,13 @@ const basePath = getLocalizedPath("/projects", lang);
 ---
 
 <Layout>
-	<div class="space-y-24">
+	<div class="space-y-20 md:space-y-28">
 		<!-- Header with Filters -->
 		<section>
 			<div class="flex items-start justify-between gap-4 flex-wrap">
 				<div>
 					<h1 class="page-title">{t("projects.title")}</h1>
-					<p class="text-muted-foreground text-lg">
+					<p class="page-subtitle">
 						{t("projects.subtitle")}
 					</p>
 				</div>
@@ -103,15 +103,19 @@ const basePath = getLocalizedPath("/projects", lang);
 			<!-- Filters -->
 			<form
 				id="filters"
-				class="flex flex-wrap items-center gap-4 mt-6 pt-6 border-t border-border"
+				class="flex flex-wrap items-center gap-6 mt-8 pt-6 border-t border-border"
 			>
-				<div class="flex items-center gap-2">
-					<span class="text-sm text-muted-foreground"
-						>{t("filter.year")}</span
+				<div class="flex items-center gap-3">
+					<label
+						for="filter-year"
+						class="text-sm text-muted-foreground"
 					>
+						{t("filter.year")}
+					</label>
 					<select
+						id="filter-year"
 						name="year"
-						class="border border-border rounded-md px-3 py-2 text-sm bg-background font-mono filter-select"
+						class="border border-border rounded-md px-3 py-2 text-sm bg-background font-mono filter-select min-w-24"
 					>
 						<option value="">{t("filter.all")}</option>
 						{
@@ -127,13 +131,17 @@ const basePath = getLocalizedPath("/projects", lang);
 					</select>
 				</div>
 
-				<div class="flex items-center gap-2">
-					<span class="text-sm text-muted-foreground"
-						>{t("filter.phase")}</span
+				<div class="flex items-center gap-3">
+					<label
+						for="filter-phase"
+						class="text-sm text-muted-foreground"
 					>
+						{t("filter.phase")}
+					</label>
 					<select
+						id="filter-phase"
 						name="phase"
-						class="border border-border rounded-md px-3 py-2 text-sm bg-background filter-select"
+						class="border border-border rounded-md px-3 py-2 text-sm bg-background filter-select min-w-32"
 					>
 						<option value="">{t("filter.all")}</option>
 						{
@@ -149,23 +157,28 @@ const basePath = getLocalizedPath("/projects", lang);
 					</select>
 				</div>
 
-				<div class="flex items-center gap-2">
-					<span class="text-sm text-muted-foreground"
-						>{t("filter.status")}</span
+				<div class="flex items-center gap-3">
+					<label
+						for="filter-status"
+						class="text-sm text-muted-foreground"
 					>
+						{t("filter.status")}
+					</label>
 					<select
+						id="filter-status"
 						name="active"
-						class="border border-border rounded-md px-3 py-2 text-sm bg-background filter-select"
+						class="border border-border rounded-md px-3 py-2 text-sm bg-background filter-select min-w-28"
 					>
 						<option value="">{t("filter.all")}</option>
-						<option value="true" selected={filterActive === "true"}
-							>{t("filter.active")}</option
-						>
+						<option value="true" selected={filterActive === "true"}>
+							{t("filter.active")}
+						</option>
 						<option
 							value="false"
 							selected={filterActive === "false"}
-							>{t("filter.inactive")}</option
 						>
+							{t("filter.inactive")}
+						</option>
 					</select>
 				</div>
 
@@ -173,9 +186,9 @@ const basePath = getLocalizedPath("/projects", lang);
 					(filterPhase || filterActive || filterYear) && (
 						<a
 							href={basePath}
-							class="text-sm text-muted-foreground hover:text-foreground transition-colors"
+							class="text-sm text-muted-foreground hover:text-foreground transition-colors ml-2"
 						>
-							{t("projects.clearFilters")}
+							× {t("projects.clearFilters")}
 						</a>
 					)
 				}
@@ -203,18 +216,18 @@ const basePath = getLocalizedPath("/projects", lang);
 
 		<!-- Stats -->
 		<section>
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-16">
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
 				<div>
-					<p class="section-title">{t("projects.showing")}</p>
+					<span class="stat-label">{t("projects.showing")}</span>
 					<p class="stat-number">{projects.length}</p>
 				</div>
 				<div>
-					<p class="section-title">{t("projects.active")}</p>
-					<p class="stat-number">{activeCount}</p>
+					<span class="stat-label">{t("projects.active")}</span>
+					<p class="stat-number text-emerald-600">{activeCount}</p>
 				</div>
 				<div>
-					<p class="section-title">{t("projects.totalValue")}</p>
-					<p class="stat-number">
+					<span class="stat-label">{t("projects.totalValue")}</span>
+					<p class="stat-number arshid">
 						{formatCurrency(totalValue, lang)}
 					</p>
 				</div>
@@ -227,7 +240,7 @@ const basePath = getLocalizedPath("/projects", lang);
 
 			{
 				projects.length === 0 ? (
-					<p class="text-muted-foreground py-8">
+					<p class="text-muted-foreground py-12 text-center">
 						{t("projects.noProjectsFound")}
 					</p>
 				) : (
@@ -236,26 +249,35 @@ const basePath = getLocalizedPath("/projects", lang);
 							<tr>
 								<th>{t("table.ref")}</th>
 								<th>{t("table.project")}</th>
+								<th>{t("table.amount")}</th>
 								<th>{t("table.phase")}</th>
 								<th>{t("table.timeline")}</th>
-								<th>{t("table.team")}</th>
-								<th class="text-right">{t("table.status")}</th>
+								<th>{t("table.status")}</th>
 							</tr>
 						</thead>
 						<tbody>
 							{projects.map((project) => (
 								<tr>
-									<td class="mono text-muted-foreground text-sm">
+									<td class="mono text-muted-foreground text-sm align-middle">
 										{project.slug || project.ref}
 									</td>
-									<td>
-										<p class="font-medium">
+									<td class="align-middle">
+										<p class="font-medium text-base">
 											{project.name}
 										</p>
 									</td>
-									<td>
+									<td class="arshid">
+										{formatCurrency(
+											project.total || 0,
+											lang,
+										)}
+									</td>
+									<td class="align-middle">
 										{project.expand?.phase ? (
-											<span class="badge badge-info">
+											<span
+												class="badge"
+												style={`background-color: ${project.expand.phase.color}20; color: ${project.expand.phase.color};`}
+											>
 												{project.expand.phase.name}
 											</span>
 										) : (
@@ -264,8 +286,8 @@ const basePath = getLocalizedPath("/projects", lang);
 											</span>
 										)}
 									</td>
-									<td class="text-sm text-muted-foreground">
-										<div class="space-y-0.5">
+									<td class="text-sm text-muted-foreground align-middle">
+										<div class="space-y-1">
 											<p>
 												{project.start_date
 													? formatDateFull(
@@ -274,7 +296,7 @@ const basePath = getLocalizedPath("/projects", lang);
 														)
 													: t("common.tbd")}
 											</p>
-											<p>
+											<p class="text-xs">
 												→{" "}
 												{project.end_date
 													? formatDateFull(
@@ -285,7 +307,7 @@ const basePath = getLocalizedPath("/projects", lang);
 											</p>
 										</div>
 									</td>
-									<td>
+									{/* <td class="align-middle">
 										{project.expand?.assignee &&
 										project.expand.assignee.length > 0 ? (
 											<div class="flex -space-x-2">
@@ -315,20 +337,21 @@ const basePath = getLocalizedPath("/projects", lang);
 												—
 											</span>
 										)}
-									</td>
-									<td class="text-right">
+									</td> */}
+									<td class="text-right align-middle">
 										<span
 											class:list={[
-												"badge",
+												"status-dot",
 												project.active
-													? "badge-active"
-													: "badge-inactive",
+													? "status-dot-active"
+													: "status-dot-inactive",
 											]}
-										>
-											{project.active
-												? t("filter.active")
-												: t("filter.inactive")}
-										</span>
+											title={
+												project.active
+													? t("filter.active")
+													: t("filter.inactive")
+											}
+										/>
 									</td>
 								</tr>
 							))}
