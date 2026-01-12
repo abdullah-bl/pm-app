@@ -1,0 +1,355 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import type { Project, Bill, BudgetItem, Budget } from "@/types";
+import {
+	getLangFromUrl,
+	useTranslations,
+	getLocalizedPath,
+	formatCurrency,
+	formatDate,
+} from "@/i18n/utils";
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const pb = Astro.locals.pb;
+
+// Get search query from URL
+const url = new URL(Astro.request.url);
+const query = url.searchParams.get("q")?.trim() || "";
+
+let projects: Project[] = [];
+let bills: Bill[] = [];
+let budgetItems: BudgetItem[] = [];
+
+if (query) {
+	try {
+		const searchFilter = (fields: string[]) =>
+			fields.map((f) => `${f}~"${query}"`).join(" || ");
+
+		const [projectsRes, billsRes, budgetItemsRes] = await Promise.all([
+			pb.collection("projects").getFullList<Project>({
+				filter: searchFilter(["name", "ref", "slug"]),
+				sort: "-created",
+				expand: "phase",
+			}),
+			pb.collection("bills").getFullList<Bill>({
+				filter: searchFilter(["name", "ref", "note"]),
+				sort: "-created",
+				expand: "budget",
+			}),
+			pb.collection("budget_items").getFullList<BudgetItem>({
+				filter: searchFilter(["note"]),
+				sort: "-year",
+				expand: "budget",
+			}),
+		]);
+
+		projects = projectsRes;
+		bills = billsRes;
+		budgetItems = budgetItemsRes;
+	} catch (e) {
+		console.error("Error searching:", e);
+	}
+}
+
+const totalResults = projects.length + bills.length + budgetItems.length;
+const hasQuery = query.length > 0;
+const basePath = getLocalizedPath("/search", lang);
+---
+
+<Layout>
+	<div class="space-y-20 md:space-y-28">
+		<!-- Header -->
+		<section>
+			<h1 class="page-title">{t("search.title")}</h1>
+			<p class="page-subtitle">{t("search.subtitle")}</p>
+
+			<!-- Search Input -->
+			<form
+				action={basePath}
+				method="GET"
+				class="mt-8 pt-6 border-t border-border"
+			>
+				<div class="relative max-w-2xl">
+					<input
+						type="text"
+						name="q"
+						value={query}
+						placeholder={t("search.placeholder")}
+						autocomplete="off"
+						autofocus
+						class="w-full px-4 py-3 text-lg border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-foreground/20 transition-shadow"
+					/>
+					<button
+						type="submit"
+						class="absolute end-2 top-1/2 -translate-y-1/2 px-4 py-2 text-sm font-medium bg-foreground text-background rounded-md hover:opacity-90 transition-opacity"
+					>
+						{t("search.title")}
+					</button>
+				</div>
+			</form>
+		</section>
+
+		{
+			hasQuery ? (
+				<>
+					<!-- Stats -->
+					<section>
+						<p class="section-title">
+							{t("search.resultsFor")} "{query}"
+						</p>
+						<div class="grid grid-cols-2 md:grid-cols-4 gap-12 md:gap-16">
+							<div>
+								<span class="stat-label">
+									{t("search.totalResults")}
+								</span>
+								<p class="stat-number">{totalResults}</p>
+							</div>
+							<div>
+								<span class="stat-label">
+									{t("search.projects")}
+								</span>
+								<p class="stat-number-md">{projects.length}</p>
+							</div>
+							<div>
+								<span class="stat-label">
+									{t("search.bills")}
+								</span>
+								<p class="stat-number-md">{bills.length}</p>
+							</div>
+							<div>
+								<span class="stat-label">
+									{t("search.budgetItems")}
+								</span>
+								<p class="stat-number-md">
+									{budgetItems.length}
+								</p>
+							</div>
+						</div>
+					</section>
+
+					{totalResults === 0 ? (
+						<section class="text-center py-16">
+							<p class="text-muted-foreground text-lg">
+								{t("search.noResults")}
+							</p>
+							<p class="text-sm text-muted-foreground mt-2">
+								{t("search.tryDifferent")}
+							</p>
+						</section>
+					) : (
+						<>
+							{/* Projects Results */}
+							{projects.length > 0 && (
+								<section>
+									<h2 class="section-title">
+										{t("search.projects")}
+									</h2>
+									<table class="data-table">
+										<thead>
+											<tr>
+												<th>{t("table.ref")}</th>
+												<th>{t("table.project")}</th>
+												<th>{t("table.phase")}</th>
+												<th class="text-right">
+													{t("table.value")}
+												</th>
+												<th class="text-right">
+													{t("table.status")}
+												</th>
+											</tr>
+										</thead>
+										<tbody>
+											{projects.map((project) => (
+												<tr
+													class="clickable"
+													onclick={`window.location.href='${getLocalizedPath(`/projects/${project.id}`, lang)}'`}
+												>
+													<td class="mono text-muted-foreground text-sm align-middle">
+														{project.slug ||
+															project.ref}
+													</td>
+													<td class="align-middle">
+														<p class="font-medium text-base">
+															{project.name}
+														</p>
+													</td>
+													<td class="align-middle">
+														{project.expand
+															?.phase ? (
+															<span
+																class="badge"
+																style={`background-color: ${project.expand.phase.color}20; color: ${project.expand.phase.color};`}
+															>
+																{
+																	project
+																		.expand
+																		.phase
+																		.name
+																}
+															</span>
+														) : (
+															<span class="text-muted-foreground">
+																—
+															</span>
+														)}
+													</td>
+													<td class="text-right arshid text-base align-middle">
+														{formatCurrency(
+															project.total || 0,
+															lang,
+														)}
+													</td>
+													<td class="text-right align-middle">
+														<span
+															class:list={[
+																"status-dot",
+																project.active
+																	? "status-dot-active"
+																	: "status-dot-inactive",
+															]}
+															title={
+																project.active
+																	? t(
+																			"filter.active",
+																		)
+																	: t(
+																			"filter.inactive",
+																		)
+															}
+														/>
+													</td>
+												</tr>
+											))}
+										</tbody>
+									</table>
+								</section>
+							)}
+
+							{/* Bills Results */}
+							{bills.length > 0 && (
+								<section>
+									<h2 class="section-title">
+										{t("search.bills")}
+									</h2>
+									<table class="data-table">
+										<thead>
+											<tr>
+												<th>{t("table.ref")}</th>
+												<th>{t("table.bill")}</th>
+												<th>{t("table.due")}</th>
+												<th class="text-right">
+													{t("table.amount")}
+												</th>
+											</tr>
+										</thead>
+										<tbody>
+											{bills.map((bill) => (
+												<tr
+													class="clickable"
+													onclick={`window.location.href='${getLocalizedPath(`/bills/${bill.id}`, lang)}'`}
+												>
+													<td class="mono text-muted-foreground text-sm align-middle">
+														{bill.ref || "—"}
+													</td>
+													<td class="align-middle">
+														<p class="font-medium text-base">
+															{bill.name}
+														</p>
+														{bill.note && (
+															<p class="text-sm text-muted-foreground line-clamp-1 mt-1">
+																{bill.note}
+															</p>
+														)}
+													</td>
+													<td class="text-muted-foreground align-middle">
+														{bill.due_date
+															? formatDate(
+																	bill.due_date,
+																	lang,
+																)
+															: "—"}
+													</td>
+													<td class="text-right font-medium arshid text-base align-middle">
+														{formatCurrency(
+															bill.amount || 0,
+															lang,
+														)}
+													</td>
+												</tr>
+											))}
+										</tbody>
+									</table>
+								</section>
+							)}
+
+							{/* Budget Items Results */}
+							{budgetItems.length > 0 && (
+								<section>
+									<h2 class="section-title">
+										{t("search.budgetItems")}
+									</h2>
+									<table class="data-table">
+										<thead>
+											<tr>
+												<th>{t("filter.year")}</th>
+												<th>{t("common.category")}</th>
+												<th class="text-right">
+													{t("budget.cash")}
+												</th>
+												<th class="text-right">
+													{t("budget.cost")}
+												</th>
+											</tr>
+										</thead>
+										<tbody>
+											{budgetItems.map((item) => (
+												<tr
+													class="clickable"
+													onclick={`window.location.href='${getLocalizedPath(`/budget/${item.id}`, lang)}'`}
+												>
+													<td class="mono text-muted-foreground align-middle">
+														{item.year}
+													</td>
+													<td class="align-middle">
+														<p class="font-medium text-base">
+															{item.expand?.budget
+																?.name || "—"}
+														</p>
+														{item.note && (
+															<p class="text-sm text-muted-foreground line-clamp-1 mt-1">
+																{item.note}
+															</p>
+														)}
+													</td>
+													<td class="text-right arshid text-base align-middle">
+														{formatCurrency(
+															item.cash || 0,
+															lang,
+														)}
+													</td>
+													<td class="text-right arshid text-base align-middle">
+														{formatCurrency(
+															item.cost || 0,
+															lang,
+														)}
+													</td>
+												</tr>
+											))}
+										</tbody>
+									</table>
+								</section>
+							)}
+						</>
+					)}
+				</>
+			) : (
+				<section class="text-center py-16">
+					<p class="text-muted-foreground text-lg">
+						{t("search.enterQuery")}
+					</p>
+				</section>
+			)
+		}
+	</div>
+</Layout>

@@ -1,0 +1,445 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import PageHeader from "@/components/PageHeader.astro";
+import StatsGrid from "@/components/StatsGrid.astro";
+import StatItem from "@/components/StatItem.astro";
+import DetailSection from "@/components/DetailSection.astro";
+import EmptyState from "@/components/EmptyState.astro";
+import type {
+	Budget,
+	BudgetItem,
+	Obligation,
+	Payment,
+	Transfer,
+} from "@/types";
+import {
+	getLangFromUrl,
+	useTranslations,
+	getLocalizedPath,
+	formatCurrency,
+	formatDateFull,
+} from "@/i18n/utils";
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const pb = Astro.locals.pb;
+const { id } = Astro.params;
+
+// Get year from URL or use current year
+const url = new URL(Astro.request.url);
+const currentYear = new Date().getFullYear();
+const selectedYear = parseInt(
+	url.searchParams.get("year") || String(currentYear),
+);
+
+let budget: Budget | null = null;
+let budgetItem: BudgetItem | null = null;
+let obligations: Obligation[] = [];
+let payments: Payment[] = [];
+let transfers: Transfer[] = [];
+
+try {
+	// First get the budget
+	budget = await pb.collection("budgets").getOne<Budget>(id!);
+
+	// Get budget item for the selected year
+	const itemsRes = await pb
+		.collection("budget_items")
+		.getList<BudgetItem>(1, 1, {
+			filter: `budget = "${id}" && year = ${selectedYear}`,
+			expand: "budget",
+		});
+	budgetItem = itemsRes.items[0] || null;
+
+	// Get all budget items to determine available years
+	const allItemsRes = await pb
+		.collection("budget_items")
+		.getFullList<BudgetItem>({
+			filter: `budget = "${id}"`,
+		});
+	const availableYears = [
+		...new Set(allItemsRes.map((item) => item.year)),
+	].sort((a, b) => b - a);
+
+	// Year range for filtering
+	const yearStart = `${selectedYear}-01-01`;
+	const yearEnd = `${selectedYear}-12-31`;
+
+	// Get obligations, payments, and transfers for this budget
+	const [obligationsRes, paymentsRes, transfersRes] = await Promise.all([
+		pb.collection("obligations").getFullList<Obligation>({
+			filter: `budget_id = "${id}" && (date >= "${yearStart}" && date <= "${yearEnd}")`,
+			sort: "-date",
+			expand: "project,bill",
+		}),
+		pb.collection("payments").getFullList<Payment>({
+			filter: `budget_id = "${id}" && (created >= "${yearStart}" && created <= "${yearEnd}")`,
+			sort: "-created",
+			expand: "project,bill",
+		}),
+		pb.collection("transfers").getFullList<Transfer>({
+			filter: `(from = "${id}" || to = "${id}") && (created >= "${yearStart}" && created <= "${yearEnd}")`,
+			sort: "-created",
+			expand: "from,to",
+		}),
+	]);
+
+	obligations = obligationsRes;
+	payments = paymentsRes;
+	transfers = transfersRes;
+} catch (e) {
+	console.error("Error fetching budget item:", e);
+}
+
+// Calculate totals
+const totalObligatedCash = obligations.reduce(
+	(sum, o) => sum + (o.cash || 0),
+	0,
+);
+const totalObligatedCost = obligations.reduce(
+	(sum, o) => sum + (o.cost || 0),
+	0,
+);
+const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+const remainingCash = (budgetItem?.cash || 0) - totalObligatedCash;
+const remainingCost = (budgetItem?.cost || 0) - totalObligatedCost;
+
+// Calculate transfers in/out
+const transfersIn = transfers
+	.filter((t) => t.to === id)
+	.reduce((sum, t) => sum + (t.cash || 0), 0);
+const transfersOut = transfers
+	.filter((t) => t.from === id)
+	.reduce((sum, t) => sum + (t.cash || 0), 0);
+
+const backPath = getLocalizedPath("/budget", lang);
+---
+
+<Layout>
+	{
+		!budget ? (
+			<div class="py-20 text-center">
+				<p class="text-muted-foreground text-lg">
+					{t("detail.budgetItemNotFound")}
+				</p>
+				<a
+					href={backPath}
+					class="text-sm text-muted-foreground hover:text-foreground mt-4 inline-block"
+				>
+					← {t("detail.backToBudget")}
+				</a>
+			</div>
+		) : (
+			<div class="space-y-20 md:space-y-28">
+				{/* Header */}
+				<PageHeader
+					title={budget.name}
+					subtitle={budget.ref}
+					backHref={backPath}
+					backLabel={t("detail.backToBudget")}
+				>
+					<div class="flex items-center gap-4 mt-4">
+						<span class="badge badge-info">{selectedYear}</span>
+						{budget.description && (
+							<span class="text-muted-foreground text-sm">
+								{budget.description}
+							</span>
+						)}
+					</div>
+				</PageHeader>
+
+				{/* Budget Allocation */}
+				<DetailSection title={t("budget.items")}>
+					{!budgetItem ? (
+						<EmptyState
+							message={`${t("budget.noItemsFound")} ${selectedYear}`}
+						/>
+					) : (
+						<StatsGrid columns={4}>
+							<StatItem
+								label={t("budget.cash")}
+								value={formatCurrency(
+									budgetItem.cash || 0,
+									lang,
+								)}
+								size="md"
+							/>
+							<StatItem
+								label={t("budget.cost")}
+								value={formatCurrency(
+									budgetItem.cost || 0,
+									lang,
+								)}
+								size="md"
+								variant="muted"
+								mono
+							/>
+							<StatItem
+								label={t("budget.remainingCash")}
+								value={formatCurrency(remainingCash, lang)}
+								size="md"
+								variant={
+									remainingCash < 0 ? "negative" : "positive"
+								}
+								mono
+							/>
+							<StatItem
+								label={t("budget.remainingCost")}
+								value={formatCurrency(remainingCost, lang)}
+								size="md"
+								variant={
+									remainingCost < 0 ? "negative" : "muted"
+								}
+								mono
+							/>
+						</StatsGrid>
+					)}
+				</DetailSection>
+
+				{/* Financial Summary */}
+				<DetailSection title={t("detail.financials")}>
+					<StatsGrid columns={4}>
+						<StatItem
+							label={t("budget.obligatedCash")}
+							value={formatCurrency(totalObligatedCash, lang)}
+							size="md"
+							mono
+						/>
+						<StatItem
+							label={t("budget.obligatedCost")}
+							value={formatCurrency(totalObligatedCost, lang)}
+							size="md"
+							variant="muted"
+							mono
+						/>
+						<StatItem
+							label={t("common.paid")}
+							value={formatCurrency(totalPaid, lang)}
+							size="md"
+							mono
+						/>
+						<StatItem
+							label={t("budget.payments")}
+							value={String(payments.length)}
+							size="md"
+							variant="muted"
+						/>
+					</StatsGrid>
+
+					{/* Transfers Summary */}
+					{(transfersIn > 0 || transfersOut > 0) && (
+						<div class="mt-8 pt-8 border-t border-border">
+							<StatsGrid columns={2}>
+								<div>
+									<p class="text-xs text-muted-foreground uppercase tracking-widest mb-2">
+										Transfers In
+									</p>
+									<p class="text-2xl font-bold text-emerald-600 arshid">
+										+{formatCurrency(transfersIn, lang)}
+									</p>
+								</div>
+								<div>
+									<p class="text-xs text-muted-foreground uppercase tracking-widest mb-2">
+										Transfers Out
+									</p>
+									<p class="text-2xl font-bold text-destructive arshid">
+										-{formatCurrency(transfersOut, lang)}
+									</p>
+								</div>
+							</StatsGrid>
+						</div>
+					)}
+				</DetailSection>
+
+				{/* Obligations */}
+				<DetailSection
+					title={`${t("budget.obligations")} (${selectedYear})`}
+				>
+					{obligations.length === 0 ? (
+						<EmptyState message={t("detail.noObligations")} />
+					) : (
+						<table class="data-table">
+							<thead>
+								<tr>
+									<th>{t("table.ref")}</th>
+									<th>{t("budget.projectBill")}</th>
+									<th>{t("table.date")}</th>
+									<th class="text-right">
+										{t("budget.cash")}
+									</th>
+									<th class="text-right">
+										{t("budget.cost")}
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{obligations.map((obligation) => (
+									<tr>
+										<td class="mono text-muted-foreground text-sm align-middle">
+											{obligation.ref}
+										</td>
+										<td class="align-middle font-medium">
+											{obligation.expand?.project?.name ||
+												obligation.expand?.bill?.name ||
+												"—"}
+										</td>
+										<td class="text-muted-foreground align-middle">
+											{formatDateFull(
+												obligation.date ||
+													obligation.created,
+												lang,
+											)}
+										</td>
+										<td class="text-right font-medium arshid text-base align-middle">
+											{formatCurrency(
+												obligation.cash || 0,
+												lang,
+											)}
+										</td>
+										<td class="text-right text-muted-foreground arshid align-middle">
+											{formatCurrency(
+												obligation.cost || 0,
+												lang,
+											)}
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					)}
+				</DetailSection>
+
+				{/* Payments */}
+				<DetailSection
+					title={`${t("budget.payments")} (${selectedYear})`}
+				>
+					{payments.length === 0 ? (
+						<EmptyState message={t("detail.noPayments")} />
+					) : (
+						<table class="data-table">
+							<thead>
+								<tr>
+									<th>{t("table.ref")}</th>
+									<th>{t("budget.projectBill")}</th>
+									<th>{t("table.date")}</th>
+									<th class="text-right">
+										{t("table.amount")}
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{payments.map((payment) => (
+									<tr>
+										<td class="arshid text-muted-foreground text-sm align-middle">
+											{payment.ref}
+										</td>
+										<td class="align-middle font-medium">
+											{payment.expand?.project?.name ||
+												payment.expand?.bill?.name ||
+												"—"}
+										</td>
+										<td class="text-muted-foreground align-middle">
+											{formatDateFull(
+												payment.created,
+												lang,
+											)}
+										</td>
+										<td class="text-right font-medium arshid text-base align-middle">
+											{formatCurrency(
+												payment.amount || 0,
+												lang,
+											)}
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					)}
+				</DetailSection>
+
+				{/* Transfers */}
+				<DetailSection
+					title={`${t("detail.transfers")} (${selectedYear})`}
+				>
+					{transfers.length === 0 ? (
+						<EmptyState message={t("detail.noTransfers")} />
+					) : (
+						<table class="data-table">
+							<thead>
+								<tr>
+									<th>{t("common.from")}</th>
+									<th>{t("common.to")}</th>
+									<th>{t("table.date")}</th>
+									<th>{t("common.note")}</th>
+									<th class="text-right">
+										{t("budget.cash")}
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{transfers.map((transfer) => {
+									const isIncoming = transfer.to === id;
+									return (
+										<tr>
+											<td class="align-middle">
+												{transfer.from === id ? (
+													<span class="font-medium">
+														{budget?.name}
+													</span>
+												) : (
+													<span class="text-muted-foreground">
+														{transfer.expand?.from
+															?.name ||
+															transfer.from}
+													</span>
+												)}
+											</td>
+											<td class="align-middle">
+												{transfer.to === id ? (
+													<span class="font-medium">
+														{budget?.name}
+													</span>
+												) : (
+													<span class="text-muted-foreground">
+														{transfer.expand?.to
+															?.name ||
+															transfer.to}
+													</span>
+												)}
+											</td>
+											<td class="text-muted-foreground align-middle">
+												{formatDateFull(
+													transfer.created,
+													lang,
+												)}
+											</td>
+											<td class="text-muted-foreground text-sm max-w-xs truncate align-middle">
+												{transfer.note || "—"}
+											</td>
+											<td
+												class:list={[
+													"text-right font-medium arshid text-base align-middle",
+													isIncoming
+														? "text-emerald-600"
+														: "text-destructive",
+												]}
+											>
+												{isIncoming ? "+" : "-"}
+												{formatCurrency(
+													transfer.cash || 0,
+													lang,
+												)}
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+					)}
+				</DetailSection>
+			</div>
+		)
+	}
+</Layout>

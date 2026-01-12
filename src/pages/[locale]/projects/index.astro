@@ -257,8 +257,11 @@ const basePath = getLocalizedPath("/projects", lang);
 						</thead>
 						<tbody>
 							{projects.map((project) => (
-								<tr>
-									<td class="mono text-muted-foreground text-sm align-middle">
+								<tr
+									class="clickable"
+									onclick={`window.location.href='${getLocalizedPath(`/projects/${project.id}`, lang)}'`}
+								>
+									<td class="mono text-muted-foreground text-sm text-center ">
 										{project.slug || project.ref}
 									</td>
 									<td class="align-middle">

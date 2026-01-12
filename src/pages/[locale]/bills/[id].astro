@@ -1,0 +1,256 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import PageHeader from "@/components/PageHeader.astro";
+import StatsGrid from "@/components/StatsGrid.astro";
+import StatItem from "@/components/StatItem.astro";
+import DetailSection from "@/components/DetailSection.astro";
+import DetailCard from "@/components/DetailCard.astro";
+import EmptyState from "@/components/EmptyState.astro";
+import type { Bill, Obligation, Payment } from "@/types";
+import {
+	getLangFromUrl,
+	useTranslations,
+	getLocalizedPath,
+	formatCurrency,
+	formatDateFull,
+} from "@/i18n/utils";
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const pb = Astro.locals.pb;
+const { id } = Astro.params;
+
+let bill: Bill | null = null;
+let obligations: Obligation[] = [];
+let payments: Payment[] = [];
+
+try {
+	bill = await pb.collection("bills").getOne<Bill>(id!, {
+		expand: "budget",
+	});
+
+	// Get obligations and payments linked to this bill
+	const [obligationsRes, paymentsRes] = await Promise.all([
+		pb.collection("obligations").getFullList<Obligation>({
+			filter: `bill_id = "${id}"`,
+			sort: "-date",
+			expand: "budget,project",
+		}),
+		pb.collection("payments").getFullList<Payment>({
+			filter: `bill_id = "${id}"`,
+			sort: "-created",
+			expand: "budget",
+		}),
+	]);
+
+	obligations = obligationsRes;
+	payments = paymentsRes;
+} catch (e) {
+	console.error("Error fetching bill:", e);
+}
+
+// Calculate totals
+const totalObligated = obligations.reduce((sum, o) => sum + (o.cash || 0), 0);
+const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+const remaining = (bill?.amount || 0) - totalPaid;
+
+// Check if overdue
+const now = new Date();
+const isOverdue = bill?.due_date && new Date(bill.due_date) < now;
+
+const backPath = getLocalizedPath("/bills", lang);
+---
+
+<Layout>
+	{
+		!bill ? (
+			<div class="py-20 text-center">
+				<p class="text-muted-foreground text-lg">
+					{t("detail.billNotFound")}
+				</p>
+				<a
+					href={backPath}
+					class="text-sm text-muted-foreground hover:text-foreground mt-4 inline-block"
+				>
+					← {t("detail.backToBills")}
+				</a>
+			</div>
+		) : (
+			<div class="space-y-20 md:space-y-28">
+				{/* Header */}
+				<PageHeader
+					title={bill.name}
+					subtitle={bill.ref}
+					backHref={backPath}
+					backLabel={t("detail.backToBills")}
+				>
+					{bill.expand?.budget && (
+						<p class="text-muted-foreground mt-3">
+							{t("budget.title")}: {bill.expand.budget.name}
+						</p>
+					)}
+				</PageHeader>
+
+				{/* Bill Overview */}
+				<DetailSection title={t("detail.overview")}>
+					<StatsGrid columns={3}>
+						<StatItem
+							label={t("table.amount")}
+							value={formatCurrency(bill.amount || 0, lang)}
+							size="lg"
+							mono
+						/>
+						<StatItem
+							label={t("table.due")}
+							value={
+								bill.due_date
+									? formatDateFull(bill.due_date, lang)
+									: t("common.tbd")
+							}
+							size="md"
+							variant={isOverdue ? "negative" : "default"}
+						/>
+						<StatItem
+							label={t("budget.remainingCash")}
+							value={formatCurrency(remaining, lang)}
+							size="md"
+							variant={remaining <= 0 ? "positive" : "muted"}
+							mono
+						/>
+					</StatsGrid>
+
+					{bill.note && (
+						<div class="mt-8 pt-8 border-t border-border">
+							<p class="text-xs text-muted-foreground uppercase tracking-widest mb-3">
+								{t("common.note")}
+							</p>
+							<p class="text-muted-foreground">{bill.note}</p>
+						</div>
+					)}
+				</DetailSection>
+
+				{/* Payment Summary */}
+				<DetailSection title={t("detail.financials")}>
+					<StatsGrid columns={3}>
+						<StatItem
+							label={t("budget.obligatedCash")}
+							value={formatCurrency(totalObligated, lang)}
+							size="md"
+							mono
+						/>
+						<StatItem
+							label={t("common.paid")}
+							value={formatCurrency(totalPaid, lang)}
+							size="md"
+							variant="positive"
+							mono
+						/>
+						<StatItem
+							label={t("budget.payments")}
+							value={String(payments.length)}
+							size="md"
+							variant="muted"
+						/>
+					</StatsGrid>
+				</DetailSection>
+
+				{/* Linked Obligations */}
+				<DetailSection title={t("detail.linkedObligations")}>
+					{obligations.length === 0 ? (
+						<EmptyState message={t("detail.noObligations")} />
+					) : (
+						<table class="data-table">
+							<thead>
+								<tr>
+									<th>{t("table.ref")}</th>
+									<th>{t("budget.title")}</th>
+									<th>{t("table.project")}</th>
+									<th>{t("table.date")}</th>
+									<th class="text-right">
+										{t("budget.cash")}
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{obligations.map((obligation) => (
+									<tr>
+										<td class="mono text-muted-foreground text-sm align-middle">
+											{obligation.ref}
+										</td>
+										<td class="align-middle font-medium">
+											{obligation.expand?.budget?.name ||
+												"—"}
+										</td>
+										<td class="text-muted-foreground align-middle">
+											{obligation.expand?.project?.name ||
+												"—"}
+										</td>
+										<td class="text-muted-foreground align-middle">
+											{formatDateFull(
+												obligation.date ||
+													obligation.created,
+												lang,
+											)}
+										</td>
+										<td class="text-right font-medium arshid text-base align-middle">
+											{formatCurrency(
+												obligation.cash || 0,
+												lang,
+											)}
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					)}
+				</DetailSection>
+
+				{/* Payment History */}
+				<DetailSection title={t("detail.paymentHistory")}>
+					{payments.length === 0 ? (
+						<EmptyState message={t("detail.noPayments")} />
+					) : (
+						<table class="data-table">
+							<thead>
+								<tr>
+									<th>{t("table.ref")}</th>
+									<th>{t("budget.title")}</th>
+									<th>{t("table.date")}</th>
+									<th class="text-right">
+										{t("table.amount")}
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{payments.map((payment) => (
+									<tr>
+										<td class="arshid text-muted-foreground text-sm align-middle">
+											{payment.ref}
+										</td>
+										<td class="align-middle font-medium">
+											{payment.expand?.budget?.name ||
+												"—"}
+										</td>
+										<td class="text-muted-foreground align-middle">
+											{formatDateFull(
+												payment.created,
+												lang,
+											)}
+										</td>
+										<td class="text-right font-medium arshid text-base align-middle">
+											{formatCurrency(
+												payment.amount || 0,
+												lang,
+											)}
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					)}
+				</DetailSection>
+			</div>
+		)
+	}
+</Layout>

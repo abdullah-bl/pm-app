@@ -4,6 +4,7 @@ import type { Bill } from "@/types";
 import {
 	getLangFromUrl,
 	useTranslations,
+	getLocalizedPath,
 	formatCurrency,
 	formatDateFull,
 } from "@/i18n/utils";
@@ -93,8 +94,11 @@ const overdueBills = bills.filter(
 									bill.due_date &&
 									new Date(bill.due_date) < now;
 								return (
-									<tr>
-										<td class="mono text-muted-foreground text-sm align-middle">
+									<tr
+										class="clickable"
+										onclick={`window.location.href='${getLocalizedPath(`/bills/${bill.id}`, lang)}'`}
+									>
+										<td class="mono text-muted-foreground text-sm text-center ">
 											{bill.ref}
 										</td>
 										<td class="align-middle">

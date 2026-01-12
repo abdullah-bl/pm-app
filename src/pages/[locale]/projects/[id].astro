@@ -1,0 +1,316 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import PageHeader from "@/components/PageHeader.astro";
+import StatsGrid from "@/components/StatsGrid.astro";
+import StatItem from "@/components/StatItem.astro";
+import DetailSection from "@/components/DetailSection.astro";
+import DetailCard from "@/components/DetailCard.astro";
+import EmptyState from "@/components/EmptyState.astro";
+import type { Project, Obligation, Payment } from "@/types";
+import {
+	getLangFromUrl,
+	useTranslations,
+	getLocalizedPath,
+	formatCurrency,
+	formatDateFull,
+} from "@/i18n/utils";
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const pb = Astro.locals.pb;
+const { id } = Astro.params;
+
+let project: Project | null = null;
+let obligations: Obligation[] = [];
+let payments: Payment[] = [];
+
+try {
+	project = await pb.collection("projects").getOne<Project>(id!, {
+		expand: "phase,assignee",
+	});
+
+	// Get obligations linked to this project
+	const [obligationsRes, paymentsRes] = await Promise.all([
+		pb.collection("obligations").getFullList<Obligation>({
+			filter: `project_id = "${id}"`,
+			sort: "-date",
+			expand: "budget",
+		}),
+		pb.collection("payments").getFullList<Payment>({
+			filter: `project_id = "${id}"`,
+			sort: "-created",
+			expand: "budget",
+		}),
+	]);
+
+	obligations = obligationsRes;
+	payments = paymentsRes;
+} catch (e) {
+	console.error("Error fetching project:", e);
+}
+
+// Calculate totals
+const totalObligatedCash = obligations.reduce(
+	(sum, o) => sum + (o.cash || 0),
+	0,
+);
+const totalObligatedCost = obligations.reduce(
+	(sum, o) => sum + (o.cost || 0),
+	0,
+);
+const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+const remaining = totalObligatedCash - totalPaid;
+
+const backPath = getLocalizedPath("/projects", lang);
+---
+
+<Layout>
+	{
+		!project ? (
+			<div class="py-20 text-center">
+				<p class="text-muted-foreground text-lg">
+					{t("detail.projectNotFound")}
+				</p>
+				<a
+					href={backPath}
+					class="text-sm text-muted-foreground hover:text-foreground mt-4 inline-block"
+				>
+					← {t("detail.backToProjects")}
+				</a>
+			</div>
+		) : (
+			<div class="space-y-20 md:space-y-28">
+				{/* Header */}
+				<PageHeader
+					title={project.name}
+					subtitle={project.slug || project.ref}
+					backHref={backPath}
+					backLabel={t("detail.backToProjects")}
+				>
+					<div class="flex items-center gap-4 mt-6">
+						{project.expand?.phase && (
+							<span
+								class="badge"
+								style={`background-color: ${project.expand.phase.color}20; color: ${project.expand.phase.color};`}
+							>
+								{project.expand.phase.name}
+							</span>
+						)}
+						<span
+							class:list={[
+								"status-dot",
+								project.active
+									? "status-dot-active"
+									: "status-dot-inactive",
+							]}
+							title={
+								project.active
+									? t("filter.active")
+									: t("filter.inactive")
+							}
+						/>
+						<span class="text-sm text-muted-foreground">
+							{project.active
+								? t("filter.active")
+								: t("filter.inactive")}
+						</span>
+					</div>
+				</PageHeader>
+
+				{/* Project Info */}
+				<DetailSection title={t("detail.overview")}>
+					<StatsGrid columns={4}>
+						<StatItem
+							label={t("projects.totalValue")}
+							value={formatCurrency(project.total || 0, lang)}
+							size="md"
+							mono
+						/>
+						<StatItem
+							label={t("detail.startDate")}
+							value={
+								project.start_date
+									? formatDateFull(project.start_date, lang)
+									: t("common.tbd")
+							}
+							size="md"
+							variant="muted"
+						/>
+						<StatItem
+							label={t("detail.endDate")}
+							value={
+								project.end_date
+									? formatDateFull(project.end_date, lang)
+									: t("common.tbd")
+							}
+							size="md"
+							variant="muted"
+						/>
+						<StatItem
+							label={t("detail.duration")}
+							value={project.duration || "—"}
+							size="md"
+							variant="muted"
+						/>
+					</StatsGrid>
+
+					{/* Assignees */}
+					{project.expand?.assignee &&
+						project.expand.assignee.length > 0 && (
+							<div class="mt-8 pt-8 border-t border-border">
+								<p class="text-xs text-muted-foreground uppercase tracking-widest mb-4">
+									{t("detail.assignees")}
+								</p>
+								<div class="flex flex-wrap gap-3">
+									{project.expand.assignee.map((user) => (
+										<div class="flex items-center gap-2 bg-muted px-3 py-2 rounded-md">
+											<div class="w-7 h-7 rounded-full bg-background flex items-center justify-center text-xs font-medium">
+												{user.name?.charAt(0) ||
+													user.email?.charAt(0)}
+											</div>
+											<span class="text-sm">
+												{user.name || user.email}
+											</span>
+										</div>
+									))}
+								</div>
+							</div>
+						)}
+				</DetailSection>
+
+				{/* Financials */}
+				<DetailSection title={t("detail.financials")}>
+					<StatsGrid columns={4}>
+						<StatItem
+							label={t("budget.obligatedCash")}
+							value={formatCurrency(totalObligatedCash, lang)}
+							size="md"
+							mono
+						/>
+						<StatItem
+							label={t("budget.obligatedCost")}
+							value={formatCurrency(totalObligatedCost, lang)}
+							size="md"
+							variant="muted"
+							mono
+						/>
+						<StatItem
+							label={t("common.paid")}
+							value={formatCurrency(totalPaid, lang)}
+							size="md"
+							mono
+						/>
+						<StatItem
+							label={t("budget.remainingCash")}
+							value={formatCurrency(remaining, lang)}
+							size="md"
+							variant={remaining < 0 ? "negative" : "positive"}
+							mono
+						/>
+					</StatsGrid>
+				</DetailSection>
+
+				{/* Linked Obligations */}
+				<DetailSection title={t("detail.linkedObligations")}>
+					{obligations.length === 0 ? (
+						<EmptyState message={t("detail.noObligations")} />
+					) : (
+						<table class="data-table">
+							<thead>
+								<tr>
+									<th>{t("table.ref")}</th>
+									<th>{t("budget.title")}</th>
+									<th>{t("table.date")}</th>
+									<th class="text-right">
+										{t("budget.cash")}
+									</th>
+									<th class="text-right">
+										{t("budget.cost")}
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{obligations.map((obligation) => (
+									<tr>
+										<td class="mono text-muted-foreground text-sm align-middle">
+											{obligation.ref}
+										</td>
+										<td class="align-middle font-medium">
+											{obligation.expand?.budget?.name ||
+												"—"}
+										</td>
+										<td class="text-muted-foreground align-middle">
+											{formatDateFull(
+												obligation.date ||
+													obligation.created,
+												lang,
+											)}
+										</td>
+										<td class="text-right font-medium arshid text-base align-middle">
+											{formatCurrency(
+												obligation.cash || 0,
+												lang,
+											)}
+										</td>
+										<td class="text-right text-muted-foreground arshid align-middle">
+											{formatCurrency(
+												obligation.cost || 0,
+												lang,
+											)}
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					)}
+				</DetailSection>
+
+				{/* Linked Payments */}
+				<DetailSection title={t("detail.linkedPayments")}>
+					{payments.length === 0 ? (
+						<EmptyState message={t("detail.noPayments")} />
+					) : (
+						<table class="data-table">
+							<thead>
+								<tr>
+									<th>{t("table.ref")}</th>
+									<th>{t("budget.title")}</th>
+									<th>{t("table.date")}</th>
+									<th class="text-right">
+										{t("table.amount")}
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{payments.map((payment) => (
+									<tr>
+										<td class="arshid text-muted-foreground text-sm align-middle">
+											{payment.ref}
+										</td>
+										<td class="align-middle font-medium">
+											{payment.expand?.budget?.name ||
+												"—"}
+										</td>
+										<td class="text-muted-foreground align-middle">
+											{formatDateFull(
+												payment.created,
+												lang,
+											)}
+										</td>
+										<td class="text-right font-medium arshid text-base align-middle">
+											{formatCurrency(
+												payment.amount || 0,
+												lang,
+											)}
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					)}
+				</DetailSection>
+			</div>
+		)
+	}
+</Layout>

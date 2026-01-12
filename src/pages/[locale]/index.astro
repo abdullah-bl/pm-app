@@ -140,8 +140,8 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 				</div>
 			</div>
 
-			<!-- Cost Budget - Secondary Stats -->
-			<div
+			<!-- Cost Budget - Secondary Stats will be hidden in the future -->
+			<!-- <div
 				class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-16 mt-12 pt-8 border-t border-border"
 			>
 				<div>
@@ -162,7 +162,7 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 						{formatCurrency(budgetRemainingCost, lang)}
 					</p>
 				</div>
-			</div>
+			</div> -->
 		</section>
 
 		<!-- Activity Stats -->
@@ -205,7 +205,7 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 						>{t("dashboard.activeProjects")}</span
 					>
 					<p class="stat-number-md">{projects.length}</p>
-					<p class="text-sm text-muted-foreground mt-2">
+					<p class="text-sm text-muted-foreground arshid mt-2">
 						{formatCurrency(totalProjectValue, lang)}
 						{t("budget.value")}
 					</p>
@@ -243,7 +243,10 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 						</thead>
 						<tbody>
 							{recentProjects.map((project) => (
-								<tr>
+								<tr
+									class="clickable"
+									onclick={`window.location.href='${getLocalizedPath(`/projects/${project.id}`, lang)}'`}
+								>
 									<td>
 										<p class="font-medium text-base leading-snug">
 											{project.name}
@@ -310,7 +313,10 @@ const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 						</thead>
 						<tbody>
 							{upcomingBills.slice(0, 5).map((bill) => (
-								<tr>
+								<tr
+									class="clickable"
+									onclick={`window.location.href='${getLocalizedPath(`/bills/${bill.id}`, lang)}'`}
+								>
 									<td>
 										<p class="font-medium text-base">
 											{bill.name}

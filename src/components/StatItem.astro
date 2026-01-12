@@ -1,0 +1,29 @@
+---
+interface Props {
+	label: string;
+	value: string | number;
+	variant?: "default" | "positive" | "negative" | "muted";
+	size?: "lg" | "md" | "sm";
+	mono?: boolean;
+}
+
+const { label, value, variant = "default", size = "lg", mono = false } = Astro.props;
+
+const valueClass = {
+	default: "",
+	positive: "text-emerald-600",
+	negative: "text-destructive",
+	muted: "text-muted-foreground",
+}[variant];
+
+const sizeClass = {
+	lg: "stat-number",
+	md: "stat-number-md",
+	sm: "text-2xl font-bold tracking-tight tabular-nums font-mono leading-none",
+}[size];
+---
+
+<div>
+	<span class="stat-label">{label}</span>
+	<p class:list={[sizeClass, valueClass, mono && "arshid"]}>{value}</p>
+</div>
