@@ -48,7 +48,7 @@ try {
 		.collection("budget_items")
 		.getList<BudgetItem>(1, 1, {
 			filter: `budget = "${id}" && year = ${selectedYear}`,
-			expand: "budget",
+			expand: "budgets",
 		});
 	budgetItem = itemsRes.items[0] || null;
 
@@ -69,14 +69,14 @@ try {
 	// Get obligations, payments, and transfers for this budget
 	const [obligationsRes, paymentsRes, transfersRes] = await Promise.all([
 		pb.collection("obligations").getFullList<Obligation>({
-			filter: `budget_id = "${id}" && (date >= "${yearStart}" && date <= "${yearEnd}")`,
+			filter: `budget = "${id}" && (date >= "${yearStart}" && date <= "${yearEnd}")`,
 			sort: "-date",
-			expand: "project,bill",
+			expand: "project,bill,budget",
 		}),
 		pb.collection("payments").getFullList<Payment>({
-			filter: `budget_id = "${id}" && (created >= "${yearStart}" && created <= "${yearEnd}")`,
+			filter: `budget = "${id}" && (created >= "${yearStart}" && created <= "${yearEnd}")`,
 			sort: "-created",
-			expand: "project,bill",
+			expand: "project,bill,obligation",
 		}),
 		pb.collection("transfers").getFullList<Transfer>({
 			filter: `(from = "${id}" || to = "${id}") && (created >= "${yearStart}" && created <= "${yearEnd}")`,
@@ -264,7 +264,7 @@ const backPath = getLocalizedPath("/budget", lang);
 							<thead>
 								<tr>
 									<th>{t("table.ref")}</th>
-									<th>{t("budget.projectBill")}</th>
+									<th>{t("budget.title")}</th>
 									<th>{t("table.date")}</th>
 									<th class="text-right">
 										{t("budget.cash")}
@@ -281,6 +281,7 @@ const backPath = getLocalizedPath("/budget", lang);
 											{obligation.ref}
 										</td>
 										<td class="align-middle font-medium">
+											{/* it should be (project, bill) name */}
 											{obligation.expand?.project?.name ||
 												obligation.expand?.bill?.name ||
 												"—"}

@@ -145,7 +145,7 @@
 
 /* Large display numbers - 60px for scannable metrics */
 .stat-number {
-	@apply text-5xl md:text-6xl font-bold tracking-tight tabular-nums font-mono leading-none;
+	@apply text-4xl md:text-5xl font-bold tracking-tight tabular-nums font-mono leading-none;
 }
 
 /* Medium stat numbers for secondary metrics */
@@ -237,4 +237,107 @@
 
 .status-dot-inactive {
 	@apply bg-neutral-300;
+}
+
+/* Phase Timeline */
+.phase-timeline-wrapper {
+	@apply w-full;
+}
+
+.phase-timeline {
+	@apply flex items-start w-full;
+}
+
+.phase-item {
+	@apply flex-1 flex items-start relative min-w-0;
+}
+
+.phase-item:last-child {
+	@apply flex-none;
+}
+
+.phase-connector {
+	@apply flex-1 h-0.5 bg-border mt-3 mx-1;
+}
+
+.phase-connector-completed {
+	@apply bg-emerald-500;
+}
+
+.phase-content {
+	@apply flex flex-col items-center gap-2;
+}
+
+.phase-dot-completed {
+	@apply w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0;
+}
+
+.phase-dot-current-wrapper {
+	@apply relative flex items-center justify-center shrink-0;
+}
+
+.phase-dot-current-ring {
+	@apply absolute w-10 h-10 rounded-full border-4 border-emerald-500/30;
+	animation: pulse-ring 2s ease-out infinite;
+}
+
+.phase-dot-current {
+	@apply w-6 h-6 rounded-full bg-emerald-500;
+}
+
+@keyframes pulse-ring {
+	0% {
+		transform: scale(1);
+		opacity: 1;
+	}
+
+	100% {
+		transform: scale(1.4);
+		opacity: 0;
+	}
+}
+
+.phase-dot-future {
+	@apply w-4 h-4 rounded-full border-2 border-border bg-background shrink-0;
+}
+
+.phase-label {
+	@apply text-[10px] text-muted-foreground whitespace-nowrap transition-colors text-center leading-tight;
+}
+
+.phase-label-completed {
+	@apply text-foreground/80;
+}
+
+.phase-label-current {
+	@apply font-semibold text-xs text-emerald-600;
+}
+
+.phase-more {
+	@apply w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0;
+}
+
+/* Files Grid */
+.files-grid {
+	@apply grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4;
+}
+
+.file-card {
+	@apply flex items-center gap-3 p-4 bg-muted rounded-lg border border-transparent hover:border-border hover:bg-muted/80 transition-all duration-200;
+}
+
+.file-icon {
+	@apply w-10 h-10 rounded-md bg-background flex items-center justify-center text-muted-foreground shrink-0;
+}
+
+.file-info {
+	@apply flex flex-col min-w-0;
+}
+
+.file-name {
+	@apply text-sm font-medium truncate;
+}
+
+.file-type {
+	@apply text-xs text-muted-foreground uppercase;
 }

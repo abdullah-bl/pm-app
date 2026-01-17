@@ -341,7 +341,6 @@ pm-app/
 ## 📝 Notes
 
 - App uses Bun as the package manager
-- PocketBase is hosted separately on Fly.io (`pm-db.fly.dev`)
 - Astro runs in SSR mode with Node adapter
 - Uses custom Arabic number font (Arshid) for numeric displays
 

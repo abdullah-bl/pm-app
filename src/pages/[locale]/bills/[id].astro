@@ -33,14 +33,14 @@ try {
 	// Get obligations and payments linked to this bill
 	const [obligationsRes, paymentsRes] = await Promise.all([
 		pb.collection("obligations").getFullList<Obligation>({
-			filter: `bill_id = "${id}"`,
+			filter: `bill = "${id}"`,
 			sort: "-date",
-			expand: "budget,project",
+			expand: "budget,bill,project",
 		}),
 		pb.collection("payments").getFullList<Payment>({
-			filter: `bill_id = "${id}"`,
+			filter: `bill = "${id}"`,
 			sort: "-created",
-			expand: "budget",
+			expand: "budget,bill,project",
 		}),
 	]);
 

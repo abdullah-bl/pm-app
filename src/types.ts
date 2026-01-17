@@ -18,7 +18,7 @@ export interface Budget {
 
 export interface BudgetItem {
     id: string;
-    budget_id: string;
+    budget: string;
     year: number;
     cash: number;
     cost: number;
@@ -53,9 +53,9 @@ export interface Obligation {
     cost: number;
     note: string;
     date: string;
-    budget_id: string;
-    project_id: string;
-    bill_id: string;
+    budget: string;
+    project: string;
+    bill: string;
     created: string;
     updated: string;
     files: string[];
@@ -81,8 +81,8 @@ export interface Bill {
     id: string;
     ref: string;
     name: string;
-    budget_id: string; // 
-    amount: number; // 
+    budget: string;
+    amount: number;
     due_date: string;
     note: string;
     created: string;
@@ -120,9 +120,9 @@ export interface Payment {
     budget_id: string;
     amount: number;
     note: string;
-    bill_id: string;
-    obligation_id: string;
-    project_id: string;
+    bill: string;
+    obligation: string;
+    project: string;
     created: string;
     updated: string;
     files: string[];

@@ -104,6 +104,15 @@ export const ui = {
     "budget.noObligationsFound": "No obligations found for",
     "budget.billProject": "Bill / Project",
     "budget.projectBill": "Project / Bill",
+    "budget.subTotal": "Sub Total",
+    "budget.subTotalObligated": "Sub Total Obligated",
+    "budget.subTotalRemaining": "Sub Total Remaining",
+    "budget.total": "Total",
+    "budget.totalObligated": "Total Obligated",
+    "budget.totalRemaining": "Total Remaining",
+    "budget.utilization": "Utilization",
+    "budget.obligated": "Obligated",
+    "budget.remaining": "Remaining",
 
     // Auth
     "auth.login": "Login",
@@ -144,6 +153,9 @@ export const ui = {
     "detail.noAssignees": "No assignees",
     "detail.transfers": "Transfers",
     "detail.noTransfers": "No transfers",
+    "detail.projectPhases": "Project Phases",
+    "detail.filesAttachments": "Files & Attachments",
+    "detail.noFiles": "No files attached",
   },
   ar: {
     // Navigation
@@ -241,6 +253,15 @@ export const ui = {
     "budget.noObligationsFound": "لم يتم العثور على التزامات مالية",
     "budget.billProject": "رابط الفاتورة/المشروع",
     "budget.projectBill": "رابط المشروع/الفاتورة",
+    "budget.subTotal": "المجموع الفرعي",
+    "budget.subTotalObligated": "المجموع الفرعي المخصص",
+    "budget.subTotalRemaining": "المجموع الفرعي المتبقٍ",
+    "budget.total": "المجموع الإجمالي",
+    "budget.totalObligated": "المجموع الإجمالي المخصص",
+    "budget.totalRemaining": "المجموع الإجمالي المتبقٍ",
+    "budget.utilization": "نسبة الاستخدام",
+    "budget.obligated": "المخصص",
+    "budget.remaining": "المتبقي",
 
     // Auth
     "auth.login": "تسجيل الدخول",
@@ -280,6 +301,9 @@ export const ui = {
     "detail.assignees": "المسؤولون عن التنفيذ",
     "detail.noAssignees": "لم يتم تحديد مسؤولين",
     "detail.transfers": "التحويلات المالية",
-    "detail.noTransfers": "لا توجد تحويلات مسجلة"
+    "detail.noTransfers": "لا توجد تحويلات مسجلة",
+    "detail.projectPhases": "مراحل المشروع",
+    "detail.filesAttachments": "الملفات والمرفقات",
+    "detail.noFiles": "لا توجد ملفات مرفقة"
   },
 } as const;

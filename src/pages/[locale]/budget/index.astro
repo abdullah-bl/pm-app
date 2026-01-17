@@ -110,7 +110,7 @@ const getObligationsByBudget = (
 	type: "cash" | "cost" = "cash",
 ) =>
 	yearObligations
-		.filter((o) => o.budget_id === budgetId)
+		.filter((o) => o.budget === budgetId)
 		.reduce((sum, o) => sum + (type === "cash" ? o.cash : o.cost || 0), 0);
 
 const getPaymentsByBudget = (budgetId: string) =>
@@ -171,78 +171,170 @@ const basePath = getLocalizedPath("/budget", lang);
 		</section>
 
 		<!-- Budget Summary Stats -->
-		<section>
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
-				<!-- Cash Budget -->
-				<div>
-					<span class="stat-label">{t("budget.cash")}</span>
-					<p class="stat-number arshid">
-						{formatCurrency(totalCash, lang)}
-					</p>
-				</div>
-				<!-- Obligated Cash -->
-				<div>
-					<span class="stat-label">{t("budget.obligatedCash")}</span>
-					<p class="stat-number arshid">
-						{formatCurrency(totalObligatedCash, lang)}
-					</p>
-				</div>
-				<!-- Remaining Cash -->
-				<div>
-					<span class="stat-label">{t("budget.remainingCash")}</span>
-					<p
-						class:list={[
-							"stat-number arshid",
-							remaining < 0
-								? "text-destructive"
-								: "text-emerald-600",
-						]}
-					>
-						{formatCurrency(remaining, lang)}
-					</p>
-				</div>
-			</div>
+		<section class="space-y-8">
+			<!-- Hero Card: Total Budget Overview -->
+			{(() => {
+				const totalBudget = totalCash + totalCost;
+				const totalObligated = totalObligatedCash + totalObligatedCost;
+				const totalRemaining = remaining + remainingCost;
+				const utilizationPercent = totalBudget > 0 ? Math.min((totalObligated / totalBudget) * 100, 100) : 0;
+				const spentPercent = totalBudget > 0 ? Math.min((totalSpent / totalBudget) * 100, 100) : 0;
+				const spendPercentOfCash = totalCash > 0 ? Math.min((totalSpent / totalCash) * 100, 100) : 0;
 
-			<!-- Cost Budget - Secondary Stats -->
-			<div
-				class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-16 mt-12 pt-8 border-t border-border"
-			>
-				<div>
-					<span class="stat-label">{t("budget.cost")}</span>
-					<p class="stat-number-md arshid">
-						{formatCurrency(totalCost, lang)}
-					</p>
-				</div>
-				<div>
-					<span class="stat-label">{t("budget.obligatedCost")}</span>
-					<p class="stat-number-md arshid">
-						{formatCurrency(totalObligatedCost, lang)}
-					</p>
-				</div>
-				<div>
-					<span class="stat-label">{t("budget.remainingCost")}</span>
-					<p
-						class:list={[
-							"stat-number-md arshid",
-							remainingCost < 0
-								? "text-destructive"
-								: "text-muted-foreground",
-						]}
-					>
-						{formatCurrency(remainingCost, lang)}
-					</p>
-				</div>
-			</div>
+				return (
+					<div class="border border-border rounded-lg p-8 md:p-10">
+						<div class="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16">
+							<div>
+								<span class="stat-label">{t("budget.total")}</span>
+								<p class="stat-number arshid">{formatCurrency(totalBudget, lang)}</p>
+							</div>
+							<div>
+								<span class="stat-label">{t("budget.totalObligated")}</span>
+								<p class="stat-number arshid">{formatCurrency(totalObligated, lang)}</p>
+							</div>
+							<div>
+								<span class="stat-label">{t("budget.totalRemaining")}</span>
+								<p class:list={["stat-number arshid", totalRemaining < 0 ? "text-destructive" : "text-emerald-600"]}>
+									{formatCurrency(totalRemaining, lang)}
+								</p>
+							</div>
+						</div>
+						
+						<!-- Utilization Progress Bar -->
+						<div class="mt-10 pt-8 border-t border-border">
+							<div class="flex items-center justify-between mb-3">
+								<span class="text-xs uppercase tracking-widest text-muted-foreground">{t("budget.utilization")}</span>
+								<span class="text-sm font-mono tabular-nums text-muted-foreground">{utilizationPercent.toFixed(1)}%</span>
+							</div>
+							<div class="h-2 bg-muted rounded-full overflow-hidden">
+								<div 
+									class:list={["h-full rounded-full transition-all", utilizationPercent > 100 ? "bg-destructive" : utilizationPercent > 80 ? "bg-amber-500" : "bg-foreground"]}
+									style={`width: ${Math.min(utilizationPercent, 100)}%`}
+								/>
+							</div>
+						</div>
 
-			<!-- Spent Summary -->
-			<div class="mt-8 pt-6 border-t border-border">
-				<p class="text-muted-foreground">
-					{t("common.spent")}: <span
-						class="font-medium arshid text-foreground"
-					>
-						{formatCurrency(totalSpent, lang)}
-					</span>
-				</p>
+						<!-- Spent Progress Bar -->
+						<div class="mt-6">
+							<div class="flex items-center justify-between mb-3">
+								<span class="text-xs uppercase tracking-widest text-muted-foreground">{t("common.spent")}</span>
+								<span class="text-sm font-mono tabular-nums text-muted-foreground">
+									{formatCurrency(totalSpent, lang)} ({spentPercent.toFixed(1)}%)
+								</span>
+							</div>
+							<div class="h-2 bg-muted rounded-full overflow-hidden">
+								<div 
+									class="h-full rounded-full bg-emerald-600 transition-all"
+									style={`width: ${Math.min(spentPercent, 100)}%`}
+								/>
+							</div>
+						</div>
+					</div>
+				);
+			})()}
+
+			<!-- Cash & Cost Cards -->
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<!-- Cash Card -->
+				{(() => {
+					const cashUtilization = totalCash > 0 ? Math.min((totalObligatedCash / totalCash) * 100, 100) : 0;
+					const spendPercentOfCash = totalCash > 0 ? Math.min((totalSpent / totalCash) * 100, 100) : 0;
+					return (
+						<div class="border border-border rounded-lg p-6 md:p-8">
+							<div class="flex items-center gap-2 mb-6">
+								<div class="w-3 h-3 rounded-full bg-foreground"></div>
+								<span class="text-xs uppercase tracking-widest text-muted-foreground">{t("budget.cash")}</span>
+							</div>
+							
+							<div class="grid grid-cols-3 gap-6">
+								<div>
+									<span class="text-xs text-muted-foreground">{t("budget.total")}</span>
+									<p class="text-xl font-bold arshid mt-1">{formatCurrency(totalCash, lang)}</p>
+								</div>
+								<div>
+									<span class="text-xs text-muted-foreground">{t("budget.obligated")}</span>
+									<p class="text-xl arshid mt-1 text-muted-foreground">{formatCurrency(totalObligatedCash, lang)}</p>
+								</div>
+								<div>
+									<span class="text-xs text-muted-foreground">{t("budget.remaining")}</span>
+									<p class:list={["text-xl arshid mt-1 font-medium", remaining < 0 ? "text-destructive" : "text-emerald-600"]}>
+										{formatCurrency(remaining, lang)}
+									</p>
+								</div>
+							</div>
+
+							<!-- Mini Progress -->
+							<div class="mt-6 pt-4 border-t border-border">
+								<div class="flex items-center justify-between mb-2">
+									<span class="text-xs text-muted-foreground">{t("budget.utilization")}</span>
+									<span class="text-xs font-mono tabular-nums text-muted-foreground">{cashUtilization.toFixed(0)}%</span>
+								</div>
+								<div class="h-1.5 bg-muted rounded-full overflow-hidden">
+									<div 
+										class:list={["h-full rounded-full transition-all", cashUtilization > 100 ? "bg-destructive" : "bg-foreground"]}
+										style={`width: ${Math.min(cashUtilization, 100)}%`}
+									/>
+								</div>
+							</div>
+							<div class="mt-6 pt-4 border-border">
+								<div class="flex items-center justify-between mb-2">
+									<span class="text-xs text-muted-foreground">{t("common.spent")}</span>
+									<span class="text-xs font-mono tabular-nums text-muted-foreground">{formatCurrency(totalSpent, lang)} ({spendPercentOfCash.toFixed(0)}%)</span>
+								</div>
+								<div class="h-1.5 bg-muted rounded-full overflow-hidden">
+									<div 
+										class:list={["h-full rounded-full transition-all", spendPercentOfCash > 100 ? "bg-destructive" : spendPercentOfCash > 80 ? "bg-amber-500" : "bg-emerald-600"]}
+										style={`width: ${Math.min(spendPercentOfCash, 100)}%`}
+									/>
+								</div>
+							</div>
+						</div>
+					);
+				})()}
+
+				<!-- Cost Card -->
+				{(() => {
+					const costUtilization = totalCost > 0 ? Math.min((totalObligatedCost / totalCost) * 100, 100) : 0;
+					return (
+						<div class="border border-border rounded-lg p-6 md:p-8">
+							<div class="flex items-center gap-2 mb-6">
+								<div class="w-3 h-3 rounded-full bg-muted-foreground"></div>
+								<span class="text-xs uppercase tracking-widest text-muted-foreground">{t("budget.cost")}</span>
+							</div>
+							
+							<div class="grid grid-cols-3 gap-6">
+								<div>
+									<span class="text-xs text-muted-foreground">{t("budget.total")}</span>
+									<p class="text-xl font-bold arshid mt-1">{formatCurrency(totalCost, lang)}</p>
+								</div>
+								<div>
+									<span class="text-xs text-muted-foreground">{t("budget.obligated")}</span>
+									<p class="text-xl arshid mt-1 text-muted-foreground">{formatCurrency(totalObligatedCost, lang)}</p>
+								</div>
+								<div>
+									<span class="text-xs text-muted-foreground">{t("budget.remaining")}</span>
+									<p class:list={["text-xl arshid mt-1 font-medium", remainingCost < 0 ? "text-destructive" : "text-emerald-600"]}>
+										{formatCurrency(remainingCost, lang)}
+									</p>
+								</div>
+							</div>
+
+							<!-- Mini Progress -->
+							<div class="mt-6 pt-4 border-t border-border">
+								<div class="flex items-center justify-between mb-2">
+									<span class="text-xs text-muted-foreground">{t("budget.utilization")}</span>
+									<span class="text-xs font-mono tabular-nums text-muted-foreground">{costUtilization.toFixed(0)}%</span>
+								</div>
+								<div class="h-1.5 bg-muted rounded-full overflow-hidden">
+									<div 
+										class:list={["h-full rounded-full transition-all", costUtilization > 100 ? "bg-destructive" : "bg-muted-foreground"]}
+										style={`width: ${Math.min(costUtilization, 100)}%`}
+									/>
+								</div>
+							</div>
+						</div>
+					);
+				})()}
 			</div>
 		</section>
 
