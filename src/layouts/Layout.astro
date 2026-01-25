@@ -47,18 +47,44 @@ const navItems = [
 		/>
 		<meta name="generator" content={Astro.generator} />
 		<title>PM</title>
+		<meta name="description" content="Project Management System" />
 	</head>
 	<body>
 		<div class="min-h-screen">
 			<!-- Top Navigation -->
-			<header class="border-b border-border">
-				<div class="max-w-6xl mx-auto px-6 py-8">
+			<header
+				class="border-border bg-background/50 backdrop-blur-sm z-50 mx-auto"
+			>
+				<div class="max-w-6xl px-4 py-4 mx-auto">
 					<nav class="flex items-center justify-between">
 						<div class="flex items-center gap-12">
-							<a
-								href={getLocalizedPath("/", lang)}
-								class="text-2xl font-bold tracking-tight">PM</a
-							>
+							<div class="flex items-center gap-2">
+								<a
+									href={getLocalizedPath("/", lang)}
+									class="text-2xl font-bold tracking-tight italic"
+								>
+									PM
+								</a>
+
+								<!-- draw a logo of a project management system -->
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="24"
+									height="24"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									class="size-6 mx-1 rotate-75"
+								>
+									<path d="M12 2L2 22h20L12 2z" rotate-75
+									></path>
+									<path d="M12 2L2 22h20L12 2z" rotate-75
+									></path>
+								</svg>
+							</div>
 							<div class="flex items-center gap-8">
 								{
 									navItems.map((item) => (

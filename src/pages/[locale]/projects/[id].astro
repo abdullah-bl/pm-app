@@ -6,7 +6,6 @@ import StatItem from "@/components/StatItem.astro";
 import DetailSection from "@/components/DetailSection.astro";
 import DetailCard from "@/components/DetailCard.astro";
 import EmptyState from "@/components/EmptyState.astro";
-import type { Project, Obligation, Payment, Phase } from "@/types";
 import {
 	getLangFromUrl,
 	useTranslations,
@@ -14,6 +13,8 @@ import {
 	formatCurrency,
 	formatDateFull,
 } from "@/i18n/utils";
+import { getProjectWithDetails } from "@/lib/data";
+import type { Project, ProjectLog } from "@/types";
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
@@ -21,44 +22,16 @@ const t = useTranslations(lang);
 const pb = Astro.locals.pb;
 const { id } = Astro.params;
 
-let project: Project | null = null;
-let obligations: Obligation[] = [];
-let payments: Payment[] = [];
-let allPhases: Phase[] = [];
-
-try {
-	// Fetch all phases first
-	allPhases = await pb.collection("phases").getFullList<Phase>({
-		sort: "order",
-	});
-
-	project = await pb.collection("projects").getOne<Project>(id!, {
-		expand: "phase,assignee",
-	});
-
-	// Get obligations linked to this project
-	const [obligationsRes, paymentsRes] = await Promise.all([
-		pb.collection("obligations").getFullList<Obligation>({
-			filter: `project = "${id}"`,
-			sort: "-date",
-			expand: "budget,bill,project",
-		}),
-		pb.collection("payments").getFullList<Payment>({
-			filter: `project = "${id}"`,
-			sort: "-created",
-			expand: "budget,bill,project",
-		}),
-	]);
-
-	obligations = obligationsRes;
-	payments = paymentsRes;
-} catch (e) {
-	console.error("Error fetching project:", e);
-}
+const data = await getProjectWithDetails(pb, id!);
+const project = data?.project ?? null;
+const allPhases = data?.allPhases ?? [];
+const obligations = data?.obligations ?? [];
+const payments = data?.payments ?? [];
+const logs = data?.logs ?? [];
 
 // Helper to get file URL from PocketBase
 const getFileUrl = (record: Project, filename: string) => {
-	return pb.files.getUrl(record, filename);
+	return pb.files.getURL(record, filename);
 };
 
 // Calculate totals
@@ -426,6 +399,63 @@ const backPath = getLocalizedPath("/projects", lang);
 								))}
 							</tbody>
 						</table>
+					)}
+				</DetailSection>
+
+				{/* Activity Log */}
+				<DetailSection title={t("detail.activityLog")}>
+					{logs.length === 0 ? (
+						<EmptyState message={t("detail.noActivity")} />
+					) : (
+						<div class="activity-timeline">
+							{logs.map((log, idx) => {
+								const isLast = idx === logs.length - 1;
+								const phaseName = log.expand?.phase?.name ?? "—";
+								const previousPhaseName = log.expand?.previous_phase?.name;
+								const userName = log.expand?.by?.name ?? log.expand?.by?.email ?? "—";
+								const logDate = new Date(log.created);
+								
+								return (
+									<div class="activity-item">
+										{/* Timeline connector */}
+										<div class="activity-connector">
+											<div class="activity-dot" />
+											{!isLast && <div class="activity-line" />}
+										</div>
+										
+										{/* Activity content */}
+										<div class="activity-content">
+											<div class="activity-header">
+												<span class="activity-phase-change">
+													{t("detail.phaseChangedTo")}{" "}
+													<span class="badge badge-info">{phaseName}</span>
+													{previousPhaseName && (
+														<>
+															{" "}{t("detail.phaseChangedFrom")}{" "}
+															<span class="text-muted-foreground">{previousPhaseName}</span>
+														</>
+													)}
+												</span>
+											</div>
+											<div class="activity-meta">
+												<span class="activity-user">
+													<span class="activity-user-avatar">
+														{userName.charAt(0).toUpperCase()}
+													</span>
+													{userName}
+												</span>
+												<span class="activity-date">
+													{formatDateFull(log.created, lang)}
+												</span>
+											</div>
+											{log.note && (
+												<p class="activity-note">{log.note}</p>
+											)}
+										</div>
+									</div>
+								);
+							})}
+						</div>
 					)}
 				</DetailSection>
 

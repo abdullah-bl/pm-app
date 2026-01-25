@@ -1,6 +1,5 @@
 ---
 import Layout from "@/layouts/Layout.astro";
-import type { Project, Bill, BudgetItem, Obligation, Payment } from "@/types";
 import {
 	getLangFromUrl,
 	useTranslations,
@@ -8,91 +7,31 @@ import {
 	formatCurrency,
 	formatDate,
 } from "@/i18n/utils";
+import { getDashboardData } from "@/lib/data";
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 const pb = Astro.locals.pb;
 
 const currentYear = new Date().getFullYear();
-const yearStart = `${currentYear}-01-01`;
-const yearEnd = `${currentYear}-12-31`;
 
-let projects: Project[] = [];
-let bills: Bill[] = [];
-let budgetItems: BudgetItem[] = [];
-let obligations: Obligation[] = [];
-let payments: Payment[] = [];
+const {
+	projects,
+	upcomingBills,
+	yearObligations,
+	yearPayments,
+	totalBudgetCash,
+	totalBudgetCost,
+	totalObligatedCash,
+	totalObligatedCost,
+	totalPaid,
+	totalBills,
+	totalProjectValue,
+	budgetRemainingCash,
+	budgetRemainingCost,
+} = await getDashboardData(pb, currentYear);
 
-try {
-	const [projectsRes, billsRes, budgetItemsRes, obligationsRes, paymentsRes] =
-		await Promise.all([
-			pb.collection("projects").getFullList<Project>({
-				sort: "-created",
-				filter: "active=true",
-				expand: "phase",
-			}),
-			pb.collection("bills").getFullList<Bill>({
-				sort: "due_date",
-			}),
-			pb.collection("budget_items").getFullList<BudgetItem>({
-				filter: `year=${currentYear}`,
-			}),
-			pb.collection("obligations").getFullList<Obligation>({
-				sort: "-date",
-			}),
-			pb.collection("payments").getFullList<Payment>({
-				sort: "-created",
-			}),
-		]);
-
-	projects = projectsRes;
-	bills = billsRes;
-	budgetItems = budgetItemsRes;
-	obligations = obligationsRes;
-	payments = paymentsRes;
-} catch (e) {
-	console.error("Error fetching dashboard data:", e);
-}
-
-// Filter data for current year
-const yearObligations = obligations.filter((o) => {
-	const date = o.date || o.created;
-	return date >= yearStart && date <= yearEnd;
-});
-
-const yearPayments = payments.filter((p) => {
-	const date = p.created;
-	return date >= yearStart && date <= yearEnd;
-});
-
-const now = new Date();
-const upcomingBills = bills.filter(
-	(b) => b.due_date && new Date(b.due_date) >= now,
-);
 const recentProjects = projects.slice(0, 5);
-
-// Calculate totals for this year
-const totalBudgetCash = budgetItems.reduce(
-	(sum, item) => sum + (item.cash || 0),
-	0,
-);
-const totalBudgetCost = budgetItems.reduce(
-	(sum, item) => sum + (item.cost || 0),
-	0,
-);
-const totalObligatedCash = yearObligations.reduce(
-	(sum, o) => sum + (o.cash || 0),
-	0,
-);
-const totalObligatedCost = yearObligations.reduce(
-	(sum, o) => sum + (o.cost || 0),
-	0,
-);
-const totalPaid = yearPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-const totalBills = upcomingBills.reduce((sum, b) => sum + (b.amount || 0), 0);
-const totalProjectValue = projects.reduce((sum, p) => sum + (p.total || 0), 0);
-const budgetRemainingCash = totalBudgetCash - totalObligatedCash;
-const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
 ---
 
 <Layout>

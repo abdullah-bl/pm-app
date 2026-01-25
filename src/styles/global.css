@@ -341,3 +341,64 @@
 .file-type {
 	@apply text-xs text-muted-foreground uppercase;
 }
+
+/* Activity Timeline */
+.activity-timeline {
+	@apply space-y-0;
+}
+
+.activity-item {
+	@apply flex gap-4;
+}
+
+.activity-connector {
+	@apply flex flex-col items-center;
+}
+
+.activity-dot {
+	@apply w-3 h-3 rounded-full bg-emerald-500 shrink-0 mt-1.5;
+}
+
+.activity-line {
+	@apply w-0.5 flex-1 bg-border my-2;
+}
+
+.activity-content {
+	@apply flex-1 pb-8;
+}
+
+.activity-item:last-child .activity-content {
+	@apply pb-0;
+}
+
+.activity-header {
+	@apply flex flex-wrap items-center gap-2 text-sm;
+}
+
+.activity-phase-change {
+	@apply text-foreground;
+}
+
+.activity-phase-change .badge {
+	@apply text-xs px-2 py-0.5;
+}
+
+.activity-meta {
+	@apply flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground;
+}
+
+.activity-user {
+	@apply flex items-center gap-2;
+}
+
+.activity-user-avatar {
+	@apply w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground;
+}
+
+.activity-date {
+	@apply text-xs;
+}
+
+.activity-note {
+	@apply mt-3 text-sm text-muted-foreground bg-muted px-4 py-3 rounded-md border-l-2 border-border;
+}

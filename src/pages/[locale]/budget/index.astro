@@ -1,12 +1,5 @@
 ---
 import Layout from "@/layouts/Layout.astro";
-import type {
-	Budget,
-	BudgetItem,
-	Payment,
-	Transfer,
-	Obligation,
-} from "@/types";
 import {
 	getLangFromUrl,
 	useTranslations,
@@ -14,6 +7,7 @@ import {
 	formatCurrency,
 	formatDateFull,
 } from "@/i18n/utils";
+import { getBudgetOverview } from "@/lib/data";
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
@@ -27,53 +21,15 @@ const selectedYear = parseInt(
 	url.searchParams.get("year") || String(currentYear),
 );
 
-let budgets: Budget[] = [];
-let allItems: BudgetItem[] = [];
-let payments: Payment[] = [];
-let transfers: Transfer[] = [];
-let obligations: Obligation[] = [];
-
-try {
-	const [budgetsRes, itemsRes, paymentsRes, transfersRes, obligationsRes] =
-		await Promise.all([
-			pb.collection("budgets").getFullList<Budget>(),
-			pb.collection("budget_items").getFullList<BudgetItem>({
-				sort: "budget.ref",
-				expand: "budget",
-			}),
-			pb.collection("payments").getFullList<Payment>({
-				sort: "-created",
-				expand: "budget,bill,project",
-			}),
-			pb.collection("transfers").getFullList<Transfer>({
-				sort: "-created",
-				expand: "from,to",
-			}),
-			pb.collection("obligations").getFullList<Obligation>({
-				sort: "-created",
-				expand: "budget,project,bill",
-			}),
-		]);
-
-	budgets = budgetsRes;
-	allItems = itemsRes;
-	payments = paymentsRes;
-	transfers = transfersRes;
-	obligations = obligationsRes;
-} catch (e) {
-	console.error("Error fetching budget data:", e);
-}
-
-// Get unique years for filter dropdown
-const availableYears = [...new Set(allItems.map((item) => item.year))].sort(
-	(a, b) => b - a,
-);
-if (!availableYears.includes(currentYear)) {
-	availableYears.unshift(currentYear);
-}
-
-// Filter items by selected year
-const items = allItems.filter((item) => item.year === selectedYear);
+const {
+	budgets,
+	items,
+	allItems,
+	payments,
+	transfers,
+	obligations,
+	availableYears,
+} = await getBudgetOverview(pb, selectedYear);
 
 // Filter obligations and payments by year (based on date field)
 const yearStart = `${selectedYear}-01-01`;
@@ -115,7 +71,7 @@ const getObligationsByBudget = (
 
 const getPaymentsByBudget = (budgetId: string) =>
 	yearPayments
-		.filter((p) => p.budget_id === budgetId)
+		.filter((p) => p.budget === budgetId)
 		.reduce((sum, p) => sum + (p.amount || 0), 0);
 
 // Filter transfers for the year
@@ -123,6 +79,20 @@ const yearTransfers = transfers.filter((t) => {
 	const date = t.created;
 	return date >= yearStart && date <= yearEnd;
 });
+
+// Calculate transfers for each budget
+const getTransfersIn = (budgetId: string, type: "cash" | "cost" = "cash") =>
+	yearTransfers
+		.filter((t) => t.to === budgetId)
+		.reduce((sum, t) => sum + (type === "cash" ? t.cash : t.cost || 0), 0);
+
+const getTransfersOut = (budgetId: string, type: "cash" | "cost" = "cash") =>
+	yearTransfers
+		.filter((t) => t.from === budgetId)
+		.reduce((sum, t) => sum + (type === "cash" ? t.cash : t.cost || 0), 0);
+
+const getTransfersForBudget = (budgetId: string) => 
+	yearTransfers.filter((t) => t.from === budgetId || t.to === budgetId);
 
 const basePath = getLocalizedPath("/budget", lang);
 ---
@@ -348,143 +318,233 @@ const basePath = getLocalizedPath("/budget", lang);
 						{t("budget.noItemsFound")} {selectedYear}
 					</p>
 				) : (
-					<div class="grid gap-6">
+					<div class="grid gap-8">
 						{items.map((item) => {
 							const budgetId = (item as any).budget;
-							const obligatedCash = getObligationsByBudget(
-								budgetId,
-								"cash",
-							);
-							const obligatedCost = getObligationsByBudget(
-								budgetId,
-								"cost",
-							);
+							const obligatedCash = getObligationsByBudget(budgetId, "cash");
+							const obligatedCost = getObligationsByBudget(budgetId, "cost");
 							const paid = getPaymentsByBudget(budgetId);
-							const availableCash =
-								(item.cash || 0) - obligatedCash;
-							const availableCost =
-								(item.cost || 0) - obligatedCost;
+							
+							// Calculate transfers
+							const transfersInCash = getTransfersIn(budgetId, "cash");
+							const transfersOutCash = getTransfersOut(budgetId, "cash");
+							const transfersInCost = getTransfersIn(budgetId, "cost");
+							const transfersOutCost = getTransfersOut(budgetId, "cost");
+							const netTransferCash = transfersInCash - transfersOutCash;
+							const netTransferCost = transfersInCost - transfersOutCost;
+							const budgetTransfers = getTransfersForBudget(budgetId);
+							
+							// Adjusted amounts (original + net transfers)
+							const adjustedCash = (item.cash || 0) + netTransferCash;
+							const adjustedCost = (item.cost || 0) + netTransferCost;
+							
+							const availableCash = adjustedCash - obligatedCash;
+							const availableCost = adjustedCost - obligatedCost;
+							
 							const budgetDetailPath = getLocalizedPath(
 								`/budget/${budgetId}?year=${selectedYear}`,
 								lang,
 							);
+							
+							// Utilization percentages
+							const cashUtilization = adjustedCash > 0 ? Math.min((obligatedCash / adjustedCash) * 100, 100) : 0;
+							const costUtilization = adjustedCost > 0 ? Math.min((obligatedCost / adjustedCost) * 100, 100) : 0;
+							
 							return (
 								<a
 									href={budgetDetailPath}
-									class="block border border-border rounded-lg p-6 space-y-5 transition-colors hover:bg-muted/50"
+									class="block border border-border rounded-xl overflow-hidden transition-all hover:border-foreground/20 hover:shadow-sm"
 								>
 									{/* Header */}
-									<div class="flex items-start justify-between gap-4">
-										<div>
-											<p class="font-medium text-lg leading-snug">
-												{item.expand?.budget?.name ||
-													"Unknown"}
-											</p>
-											{item.note && (
-												<p class="text-sm text-muted-foreground mt-1.5">
-													{item.note}
-												</p>
-											)}
-										</div>
-										<span class="mono text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded">
-											{item.expand?.budget?.ref || "—"}
-										</span>
-									</div>
-
-									{/* Budget Amounts */}
-									<div class="grid grid-cols-2 md:grid-cols-4 gap-6 pt-5 border-t border-border">
-										<div>
-											<p class="text-xs text-muted-foreground uppercase tracking-widest">
-												{t("budget.cash")}
-											</p>
-											<p class="font-medium arshid mt-2 text-base">
-												{formatCurrency(
-													item.cash || 0,
-													lang,
+									<div class="bg-muted/30 px-6 py-5 border-b border-border">
+										<div class="flex items-start justify-between gap-4">
+											<div class="min-w-0 flex-1">
+												<div class="flex items-center justify-between gap-3">
+													<h3 class="font-semibold text-lg truncate">
+														{item.expand?.budget?.name || "Unknown"}
+													</h3>
+													<span class="font-mono text-base text-muted-foreground bg-background px-2.5 py-1 rounded border border-border shrink-0">
+														{item.expand?.budget?.ref || "—"}
+													</span>
+												</div>
+												{item.note && (
+													<p class="text-sm text-muted-foreground mt-2 line-clamp-2">
+														{item.note}
+													</p>
 												)}
-											</p>
-										</div>
-										<div>
-											<p class="text-xs text-muted-foreground uppercase tracking-widest">
-												{t("budget.cost")}
-											</p>
-											<p class="text-muted-foreground arshid mt-2">
-												{formatCurrency(
-													item.cost || 0,
-													lang,
-												)}
-											</p>
-										</div>
-										<div>
-											<p class="text-xs text-muted-foreground uppercase tracking-widest">
-												{t("budget.obligatedCash")}
-											</p>
-											<p class="arshid mt-2">
-												{formatCurrency(
-													obligatedCash,
-													lang,
-												)}
-											</p>
-										</div>
-										<div>
-											<p class="text-xs text-muted-foreground uppercase tracking-widest">
-												{t("budget.obligatedCost")}
-											</p>
-											<p class="arshid mt-2 text-muted-foreground">
-												{formatCurrency(
-													obligatedCost,
-													lang,
-												)}
-											</p>
+											</div>
 										</div>
 									</div>
 
-									{/* Remaining & Payments */}
-									<div class="grid grid-cols-2 md:grid-cols-3 gap-6 pt-5 border-t border-border">
-										<div>
-											<p class="text-xs text-muted-foreground uppercase tracking-widest">
-												{t("budget.payments")}
-											</p>
-											<p class="text-muted-foreground arshid mt-2">
-												{formatCurrency(paid, lang)}
-											</p>
+									<div class="p-6 space-y-6">
+										{/* Main Grid: Cash & Cost Side by Side */}
+										<div class="grid md:grid-cols-2 gap-6">
+											{/* Cash Column */}
+											<div class="space-y-4">
+												<div class="flex items-center gap-2 pb-2 border-b border-border">
+													<div class="w-2.5 h-2.5 rounded-full bg-foreground"></div>
+													<span class="text-base font-medium uppercase tracking-widest">{t("budget.cash")}</span>
+												</div>
+												
+												<div class="grid grid-cols-2 gap-4">
+													<div>
+														<p class="text-base text-muted-foreground mb-1">{t("budget.total")}</p>
+														<p class="font-semibold arshid text-lg">{formatCurrency(item.cash || 0, lang)}</p>
+													</div>
+													<div>
+														<p class="text-base text-muted-foreground mb-1">{t("budget.adjusted")}</p>
+														<p class:list={["font-medium arshid", netTransferCash !== 0 ? (netTransferCash > 0 ? "text-emerald-600" : "text-amber-600") : ""]}>
+															{formatCurrency(adjustedCash, lang)}
+														</p>
+													</div>
+													<div>
+														<p class="text-base text-muted-foreground mb-1">{t("budget.obligated")}</p>
+														<p class="arshid text-muted-foreground">{formatCurrency(obligatedCash, lang)}</p>
+													</div>
+													<div>
+														<p class="text-base text-muted-foreground mb-1">{t("budget.remaining")}</p>
+														<p class:list={["font-semibold arshid", availableCash < 0 ? "text-destructive" : "text-emerald-600"]}>
+															{formatCurrency(availableCash, lang)}
+														</p>
+													</div>
+												</div>
+												
+												{/* Cash Utilization Bar */}
+												<div>
+													<div class="flex items-center justify-between mb-1.5">
+														<span class="text-xs text-muted-foreground">{t("budget.utilization")}</span>
+														<span class="text-xs font-mono tabular-nums text-muted-foreground">{cashUtilization.toFixed(0)}%</span>
+													</div>
+													<div class="h-1.5 bg-muted rounded-full overflow-hidden">
+														<div 
+															class:list={["h-full rounded-full transition-all", cashUtilization > 100 ? "bg-destructive" : cashUtilization > 80 ? "bg-amber-500" : "bg-foreground"]}
+															style={`width: ${Math.min(cashUtilization, 100)}%`}
+														/>
+													</div>
+												</div>
+											</div>
+											
+											{/* Cost Column */}
+											<div class="space-y-4">
+												<div class="flex items-center gap-2 pb-2 border-b border-border">
+													<div class="w-2.5 h-2.5 rounded-full bg-muted-foreground"></div>
+													<span class="text-xs font-medium uppercase tracking-widest">{t("budget.cost")}</span>
+												</div>
+												
+												<div class="grid grid-cols-2 gap-4">
+													<div>
+														<p class="text-xs text-muted-foreground mb-1">{t("budget.total")}</p>
+														<p class="font-semibold arshid text-lg text-muted-foreground">{formatCurrency(item.cost || 0, lang)}</p>
+													</div>
+													<div>
+														<p class="text-xs text-muted-foreground mb-1">{t("budget.adjusted")}</p>
+														<p class:list={["font-medium arshid text-muted-foreground", netTransferCost !== 0 ? (netTransferCost > 0 ? "text-emerald-600" : "text-amber-600") : ""]}>
+															{formatCurrency(adjustedCost, lang)}
+														</p>
+													</div>
+													<div>
+														<p class="text-xs text-muted-foreground mb-1">{t("budget.obligated")}</p>
+														<p class="arshid text-muted-foreground">{formatCurrency(obligatedCost, lang)}</p>
+													</div>
+													<div>
+														<p class="text-xs text-muted-foreground mb-1">{t("budget.remaining")}</p>
+														<p class:list={["font-medium arshid", availableCost < 0 ? "text-destructive" : "text-muted-foreground"]}>
+															{formatCurrency(availableCost, lang)}
+														</p>
+													</div>
+												</div>
+												
+												{/* Cost Utilization Bar */}
+												<div>
+													<div class="flex items-center justify-between mb-1.5">
+														<span class="text-xs text-muted-foreground">{t("budget.utilization")}</span>
+														<span class="text-xs font-mono tabular-nums text-muted-foreground">{costUtilization.toFixed(0)}%</span>
+													</div>
+													<div class="h-1.5 bg-muted rounded-full overflow-hidden">
+														<div 
+															class:list={["h-full rounded-full transition-all", costUtilization > 100 ? "bg-destructive" : costUtilization > 80 ? "bg-amber-500" : "bg-muted-foreground"]}
+															style={`width: ${Math.min(costUtilization, 100)}%`}
+														/>
+													</div>
+												</div>
+											</div>
 										</div>
-										<div>
-											<p class="text-xs text-muted-foreground uppercase tracking-widest">
-												{t("budget.remainingCash")}
-											</p>
-											<p
-												class:list={[
-													"font-medium arshid mt-2 text-base",
-													availableCash < 0
-														? "text-destructive"
-														: "text-emerald-600",
-												]}
-											>
-												{formatCurrency(
-													availableCash,
-													lang,
+										
+										{/* Payments Row */}
+										<div class="flex items-center justify-between pt-4 border-t border-border">
+											<div class="flex items-center gap-2">
+												<span class="text-xs text-muted-foreground uppercase tracking-widest">{t("budget.payments")}</span>
+											</div>
+											<p class="font-medium arshid">{formatCurrency(paid, lang)}</p>
+										</div>
+										
+										{/* Transfers Section */}
+										{budgetTransfers.length > 0 && (
+											<div class="pt-4 border-t border-border space-y-3">
+												<div class="flex items-center gap-2">
+													<svg class="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+													</svg>
+													<span class="text-xs font-medium uppercase tracking-widest">{t("budget.transfers")}</span>
+												</div>
+												
+												<div class="space-y-2">
+													{budgetTransfers.slice(0, 3).map((transfer) => {
+														const isIncoming = transfer.to === budgetId;
+														const otherBudgetName = isIncoming 
+															? (transfer.expand?.from?.name || "Unknown")
+															: (transfer.expand?.to?.name || "Unknown");
+														
+														return (
+															<div class="flex items-center justify-between text-sm py-2 px-3 rounded-lg bg-muted/50">
+																<div class="flex items-center gap-2 min-w-0">
+																	{isIncoming ? (
+																		<svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+																			<path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+																		</svg>
+																	) : (
+																		<svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+																			<path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+																		</svg>
+																	)}
+																	<span class="text-muted-foreground truncate">
+																		{isIncoming ? t("common.from") : t("common.to")}: <span class="text-foreground font-medium">{otherBudgetName}</span>
+																	</span>
+																</div>
+																<div class="flex items-center gap-3 shrink-0">
+																	<span class:list={["font-mono text-sm", isIncoming ? "text-emerald-600" : "text-amber-600"]}>
+																		{isIncoming ? "+" : "−"}{formatCurrency(transfer.cash || 0, lang)}
+																	</span>
+																</div>
+															</div>
+														);
+													})}
+													
+													{budgetTransfers.length > 3 && (
+														<p class="text-xs text-muted-foreground text-center py-1">
+															+{budgetTransfers.length - 3} more transfers
+														</p>
+													)}
+												</div>
+												
+												{/* Net Transfer Summary */}
+												{(netTransferCash !== 0 || netTransferCost !== 0) && (
+													<div class="flex items-center justify-between pt-2 border-t border-dashed border-border">
+														<span class="text-xs text-muted-foreground">{t("budget.netTransfer")}</span>
+														<div class="flex items-center gap-4">
+															<span class:list={["font-mono text-sm font-medium", netTransferCash > 0 ? "text-emerald-600" : netTransferCash < 0 ? "text-amber-600" : "text-muted-foreground"]}>
+																{netTransferCash >= 0 ? "+" : ""}{formatCurrency(netTransferCash, lang)}
+															</span>
+															{netTransferCost !== 0 && (
+																<span class:list={["font-mono text-sm text-muted-foreground", netTransferCost > 0 ? "text-emerald-600" : "text-amber-600"]}>
+																	{netTransferCost >= 0 ? "+" : ""}{formatCurrency(netTransferCost, lang)}
+																</span>
+															)}
+														</div>
+													</div>
 												)}
-											</p>
-										</div>
-										<div>
-											<p class="text-xs text-muted-foreground uppercase tracking-widest">
-												{t("budget.remainingCost")}
-											</p>
-											<p
-												class:list={[
-													"arshid mt-2",
-													availableCost < 0
-														? "text-destructive"
-														: "text-muted-foreground",
-												]}
-											>
-												{formatCurrency(
-													availableCost,
-													lang,
-												)}
-											</p>
-										</div>
+											</div>
+										)}
 									</div>
 								</a>
 							);

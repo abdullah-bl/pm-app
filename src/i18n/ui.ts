@@ -113,6 +113,10 @@ export const ui = {
     "budget.utilization": "Utilization",
     "budget.obligated": "Obligated",
     "budget.remaining": "Remaining",
+    "budget.transfersIn": "Transfers In",
+    "budget.transfersOut": "Transfers Out",
+    "budget.netTransfer": "Net Transfer",
+    "budget.adjusted": "Adjusted",
 
     // Auth
     "auth.login": "Login",
@@ -156,6 +160,11 @@ export const ui = {
     "detail.projectPhases": "Project Phases",
     "detail.filesAttachments": "Files & Attachments",
     "detail.noFiles": "No files attached",
+    "detail.activityLog": "Activity Log",
+    "detail.noActivity": "No activity recorded",
+    "detail.phaseChangedTo": "Phase changed to",
+    "detail.phaseChangedFrom": "from",
+    "detail.changedBy": "by",
   },
   ar: {
     // Navigation
@@ -238,8 +247,8 @@ export const ui = {
     "common.available": "المتاح",
     "common.paid": "تم الدفع",
     "common.note": "ملاحظات",
-    "common.from": "من تاريخ",
-    "common.to": "حتى تاريخ",
+    "common.from": "من",
+    "common.to": "إلى",
     "common.category": "التصنيف",
     "common.files": "المستندات المرفقة",
     "common.file": "ملف",
@@ -262,6 +271,10 @@ export const ui = {
     "budget.utilization": "نسبة الاستخدام",
     "budget.obligated": "المخصص",
     "budget.remaining": "المتبقي",
+    "budget.transfersIn": "تحويلات واردة",
+    "budget.transfersOut": "تحويلات صادرة",
+    "budget.netTransfer": "صافي التحويلات",
+    "budget.adjusted": "التعديل",
 
     // Auth
     "auth.login": "تسجيل الدخول",
@@ -304,6 +317,11 @@ export const ui = {
     "detail.noTransfers": "لا توجد تحويلات مسجلة",
     "detail.projectPhases": "مراحل المشروع",
     "detail.filesAttachments": "الملفات والمرفقات",
-    "detail.noFiles": "لا توجد ملفات مرفقة"
+    "detail.noFiles": "لا توجد ملفات مرفقة",
+    "detail.activityLog": "سجل النشاط",
+    "detail.noActivity": "لا يوجد نشاط مسجل",
+    "detail.phaseChangedTo": "تم تغيير المرحلة إلى",
+    "detail.phaseChangedFrom": "من",
+    "detail.changedBy": "بواسطة",
   },
 } as const;

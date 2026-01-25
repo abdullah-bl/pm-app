@@ -114,10 +114,28 @@ export interface Project {
     }
 }
 
+export interface ProjectLog {
+    id: string;
+    project: string;        // relation to Project
+    phase: string;          // relation to Phase (the new phase)
+    previous_phase?: string; // relation to Phase (optional, the old phase)
+    by: string;             // relation to User (who made the change)
+    note?: string;          // optional comment about the change
+    created: string;
+    updated: string;
+    expand?: {
+        project: Project;
+        phase: Phase;
+        previous_phase?: Phase;
+        by: User;
+    }
+}
+
+
 export interface Payment {
     id: string;
     ref: string;
-    budget_id: string;
+    budget: string;
     amount: number;
     note: string;
     bill: string;
@@ -145,4 +163,5 @@ export interface TypedPocketBase extends PocketBase {
     collection(idOrName: 'projects'): RecordService<Project>
     collection(idOrName: 'payments'): RecordService<Payment>
     collection(idOrName: 'transfers'): RecordService<Transfer>
+    collection(idOrName: 'project_logs'): RecordService<ProjectLog>
 }

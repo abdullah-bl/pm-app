@@ -1,6 +1,5 @@
 ---
 import Layout from "@/layouts/Layout.astro";
-import type { Project, Phase } from "@/types";
 import {
 	getLangFromUrl,
 	useTranslations,
@@ -8,6 +7,7 @@ import {
 	formatCurrency,
 	formatDateFull,
 } from "@/i18n/utils";
+import { getProjects, getProjectYears } from "@/lib/data";
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
@@ -20,65 +20,18 @@ const filterPhase = url.searchParams.get("phase") || "";
 const filterActive = url.searchParams.get("active") || "";
 const filterYear = url.searchParams.get("year") || "";
 
-let allProjects: Project[] = [];
-let phases: Phase[] = [];
+// Get all projects first (unfiltered) for year extraction
+const { projects: allProjects, phases } = await getProjects(pb);
 
-try {
-	const [projectsRes, phasesRes] = await Promise.all([
-		pb.collection("projects").getFullList<Project>({
-			sort: "-ref",
-			expand: "phase,assignee",
-		}),
-		pb.collection("phases").getFullList<Phase>({
-			sort: "order",
-		}),
-	]);
-	allProjects = projectsRes;
-	phases = phasesRes;
-} catch (e) {
-	console.error("Error fetching projects:", e);
-}
+// Get unique years from all projects
+const availableYears = getProjectYears(allProjects);
 
-// Get unique years from project dates
-const getYearFromDate = (date: string) =>
-	date ? new Date(date).getFullYear() : null;
-const projectYears = new Set<number>();
-allProjects.forEach((p) => {
-	const startYear = getYearFromDate(p.start_date);
-	const endYear = getYearFromDate(p.end_date);
-	if (startYear) projectYears.add(startYear);
-	if (endYear) projectYears.add(endYear);
+// Now get filtered projects
+const { projects } = await getProjects(pb, {
+	phase: filterPhase || undefined,
+	active: filterActive === "true" ? true : filterActive === "false" ? false : null,
+	year: filterYear ? parseInt(filterYear) : undefined,
 });
-const availableYears = [...projectYears].sort((a, b) => b - a);
-
-// Apply filters
-let projects = allProjects;
-
-if (filterPhase) {
-	projects = projects.filter((p) => p.phase === filterPhase);
-}
-
-if (filterActive === "true") {
-	projects = projects.filter((p) => p.active);
-} else if (filterActive === "false") {
-	projects = projects.filter((p) => !p.active);
-}
-
-if (filterYear) {
-	const year = parseInt(filterYear);
-	projects = projects.filter((p) => {
-		const startYear = getYearFromDate(p.start_date);
-		const endYear = getYearFromDate(p.end_date);
-		if (startYear && endYear) {
-			return startYear <= year && year <= endYear;
-		} else if (startYear) {
-			return startYear <= year;
-		} else if (endYear) {
-			return year <= endYear;
-		}
-		return true;
-	});
-}
 
 const activeCount = projects.filter((p) => p.active).length;
 const totalValue = projects.reduce((sum, p) => sum + (p.total || 0), 0);

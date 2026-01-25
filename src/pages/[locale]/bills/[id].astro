@@ -6,7 +6,6 @@ import StatItem from "@/components/StatItem.astro";
 import DetailSection from "@/components/DetailSection.astro";
 import DetailCard from "@/components/DetailCard.astro";
 import EmptyState from "@/components/EmptyState.astro";
-import type { Bill, Obligation, Payment } from "@/types";
 import {
 	getLangFromUrl,
 	useTranslations,
@@ -14,6 +13,7 @@ import {
 	formatCurrency,
 	formatDateFull,
 } from "@/i18n/utils";
+import { getBillWithDetails } from "@/lib/data";
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
@@ -21,34 +21,10 @@ const t = useTranslations(lang);
 const pb = Astro.locals.pb;
 const { id } = Astro.params;
 
-let bill: Bill | null = null;
-let obligations: Obligation[] = [];
-let payments: Payment[] = [];
-
-try {
-	bill = await pb.collection("bills").getOne<Bill>(id!, {
-		expand: "budget",
-	});
-
-	// Get obligations and payments linked to this bill
-	const [obligationsRes, paymentsRes] = await Promise.all([
-		pb.collection("obligations").getFullList<Obligation>({
-			filter: `bill = "${id}"`,
-			sort: "-date",
-			expand: "budget,bill,project",
-		}),
-		pb.collection("payments").getFullList<Payment>({
-			filter: `bill = "${id}"`,
-			sort: "-created",
-			expand: "budget,bill,project",
-		}),
-	]);
-
-	obligations = obligationsRes;
-	payments = paymentsRes;
-} catch (e) {
-	console.error("Error fetching bill:", e);
-}
+const data = await getBillWithDetails(pb, id!);
+const bill = data?.bill ?? null;
+const obligations = data?.obligations ?? [];
+const payments = data?.payments ?? [];
 
 // Calculate totals
 const totalObligated = obligations.reduce((sum, o) => sum + (o.cash || 0), 0);

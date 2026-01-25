@@ -1,6 +1,5 @@
 ---
 import Layout from "@/layouts/Layout.astro";
-import type { Bill } from "@/types";
 import {
 	getLangFromUrl,
 	useTranslations,
@@ -8,24 +7,14 @@ import {
 	formatCurrency,
 	formatDateFull,
 } from "@/i18n/utils";
+import { getBills, getUpcomingBills, getOverdueBills } from "@/lib/data";
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
 const pb = Astro.locals.pb;
 
-let bills: Bill[] = [];
-
-try {
-	const result = await pb.collection("bills").getFullList<Bill>({
-		sort: "due_date",
-		expand: "budget",
-	});
-	bills = result;
-} catch (e) {
-	console.error("Error fetching bills:", e);
-}
-
+const bills = await getBills(pb);
 const totalAmount = bills.reduce((sum, b) => sum + (b.amount || 0), 0);
 
 const now = new Date();
