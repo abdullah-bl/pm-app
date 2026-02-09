@@ -1,0 +1,114 @@
+---
+import { ClientRouter } from "astro:transitions";
+
+import {
+    getLangFromUrl,
+    useTranslations,
+    getLocalizedPath,
+    getDirection,
+} from "@/i18n/utils";
+import LanguageSwitcher from "@/components/LanguageSwitcher.astro";
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const dir = getDirection(lang);
+
+const currentPath = Astro.url.pathname;
+
+// Helper to check if current path matches nav item
+const isActive = (href: string) => {
+    const localizedHref = getLocalizedPath(href, lang);
+    if (href === "/") {
+        return currentPath === localizedHref || currentPath === `/${lang}`;
+    }
+    return currentPath.startsWith(localizedHref);
+};
+
+const navItems = [
+    { href: "/", label: t("nav.overview") },
+    { href: "/search", label: t("nav.search") },
+    { href: "/projects", label: t("nav.projects") },
+    { href: "/payments", label: t("nav.payments") },
+    { href: "/budget", label: t("nav.budget") },
+];
+---
+
+<header class="border-border bg-background/50 backdrop-blur-sm z-50 mx-auto">
+    <div class="max-w-6xl px-4 py-4 mx-auto">
+        <nav class="flex items-center justify-between">
+            <div class="flex items-center gap-12">
+                <div class="flex items-center gap-2">
+                    <a
+                        href={getLocalizedPath("/", lang)}
+                        class="text-2xl font-bold tracking-tight italic"
+                    >
+                        PM
+                    </a>
+
+                    <!-- draw a logo of a project management system -->
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="size-6 mx-1 rotate-75"
+                    >
+                        <path d="M12 2L2 22h20L12 2z" rotate-75></path>
+                        <path d="M12 2L2 22h20L12 2z" rotate-75></path>
+                    </svg>
+                </div>
+                <div class="flex items-center gap-8">
+                    {
+                        navItems.map((item) => (
+                            <a
+                                href={getLocalizedPath(item.href, lang)}
+                                class:list={[
+                                    "text-base font-medium transition-colors",
+                                    isActive(item.href)
+                                        ? "text-foreground"
+                                        : "text-muted-foreground hover:text-foreground",
+                                ]}
+                            >
+                                {item.label}
+                            </a>
+                        ))
+                    }
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <LanguageSwitcher />
+                <button
+                    id="sign-out-btn"
+                    class="text-base font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    {t("auth.logout")}
+                </button>
+            </div>
+        </nav>
+    </div>
+</header>
+
+<ClientRouter />
+
+<script>
+    document
+        .getElementById("sign-out-btn")
+        ?.addEventListener("click", async () => {
+            try {
+                const response = await fetch("/api/logout", {
+                    method: "POST",
+                });
+
+                if (response.ok) {
+                    window.location.href = "/login";
+                }
+            } catch (error) {
+                console.error("Logout failed:", error);
+            }
+        });
+</script>

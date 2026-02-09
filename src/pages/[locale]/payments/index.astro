@@ -1,0 +1,192 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import {
+	getLangFromUrl,
+	useTranslations,
+	getLocalizedPath,
+	formatCurrency,
+	formatDateFull,
+} from "@/i18n/utils";
+import { getPayments } from "@/lib/data";
+import { PaymentsStatusOptions } from "@/pocketbase-types";
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const pb = Astro.locals.pb;
+
+// Get status filter from URL params
+const url = new URL(Astro.request.url);
+const statusFilter = url.searchParams.get("status") as PaymentsStatusOptions | null;
+
+const allPayments = await getPayments(pb);
+
+// Filter by status if provided
+const payments = statusFilter
+	? allPayments.filter((p) => p.status === statusFilter)
+	: allPayments;
+
+const totalAmount = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+const now = new Date();
+const plannedCount = allPayments.filter((p) => p.status === "planned").length;
+const pendingCount = allPayments.filter((p) => p.status === "pending").length;
+const paidCount = allPayments.filter((p) => p.status === "paid").length;
+
+const basePath = getLocalizedPath("/payments", lang);
+---
+
+<Layout>
+	<div class="space-y-24">
+		<!-- Header -->
+		<section>
+			<div class="flex items-center justify-between gap-4 flex-wrap">
+				<div>
+					<h1 class="page-title">{t("payments.title")}</h1>
+					<p class="page-subtitle">{t("payments.subtitle")}</p>
+				</div>
+				<div class="flex items-center gap-3">
+					<label for="status-filter" class="text-base text-muted-foreground">
+						{t("filter.status")}
+					</label>
+					<select
+						id="status-filter"
+						class="border border-border rounded-md px-3 py-2 text-base bg-background font-mono min-w-28"
+					>
+						<option value="" selected={!statusFilter}>{t("filter.all")}</option>
+						<option value="planned" selected={statusFilter === "planned"}>{t("payments.planned")}</option>
+						<option value="pending" selected={statusFilter === "pending"}>{t("payments.pending")}</option>
+						<option value="paid" selected={statusFilter === "paid"}>{t("payments.paid")}</option>
+					</select>
+				</div>
+			</div>
+
+			<script define:vars={{ basePath }}>
+				document
+					.getElementById("status-filter")
+					.addEventListener("change", function () {
+						const status = this.value;
+						window.location.href = status
+							? basePath + "?status=" + status
+							: basePath;
+					});
+			</script>
+		</section>
+
+		<!-- Stats -->
+		<section>
+			<div class="grid grid-cols-2 md:grid-cols-4 gap-12 md:gap-16">
+				<div>
+					<span class="stat-label">{t("payments.title")}</span>
+					<p class="stat-number">{payments.length}</p>
+				</div>
+				<div>
+					<span class="stat-label">{t("payments.planned")}</span>
+					<p class="stat-number text-amber-600">{plannedCount}</p>
+				</div>
+				<div>
+					<span class="stat-label">{t("payments.pending")}</span>
+					<p class="stat-number text-blue-600">{pendingCount}</p>
+				</div>
+				<div>
+					<span class="stat-label">{t("table.amount")}</span>
+					<p class="stat-number arshid">
+						{formatCurrency(totalAmount, lang)}
+					</p>
+				</div>
+			</div>
+		</section>
+
+		<!-- Payments List -->
+		<section>
+			<h2 class="section-title">{t("payments.title")}</h2>
+
+			{
+				payments.length === 0 ? (
+					<p class="text-muted-foreground py-12 text-center">
+						{t("payments.noPaymentsFound")}
+					</p>
+				) : (
+					<table class="data-table">
+						<thead>
+							<tr>
+								<th>{t("table.ref")}</th>
+								<th>{t("payments.payment")}</th>
+								<th>{t("table.status")}</th>
+								<th>{t("table.due")}</th>
+								<th class="text-right">{t("table.amount")}</th>
+							</tr>
+						</thead>
+						<tbody>
+							{payments.map((payment) => {
+								const isOverdue =
+									payment.status === "planned" &&
+									payment.due_date &&
+									new Date(payment.due_date) < now;
+								return (
+									<tr
+										class="clickable"
+										onclick={`window.location.href='${getLocalizedPath(`/payments/${payment.id}`, lang)}'`}
+									>
+										<td class="mono text-muted-foreground text-center">
+											{payment.ref}
+										</td>
+										<td class="align-middle">
+											<p class="font-medium text-base">
+												{payment.name}
+											</p>
+										</td>
+										<td class="align-middle">
+											<span
+												class:list={[
+													"badge text-xs",
+													payment.status === "paid"
+														? "badge-success"
+														: payment.status === "pending"
+															? "badge-info"
+															: "badge-warning",
+												]}
+											>
+												{payment.status === "paid"
+													? t("payments.paid")
+													: payment.status === "pending"
+														? t("payments.pending")
+														: t("payments.planned")}
+											</span>
+										</td>
+										<td class="align-middle">
+											{payment.due_date ? (
+												<span
+													class:list={[
+														isOverdue
+															? "text-destructive font-medium"
+															: "text-muted-foreground",
+													]}
+												>
+													{formatDateFull(
+														payment.due_date,
+														lang,
+													)}
+												</span>
+											) : (
+												<span class="text-muted-foreground">
+													—
+												</span>
+											)}
+										</td>
+										<td class="text-right font-medium arshid text-base align-middle">
+											{formatCurrency(
+												payment.amount || 0,
+												lang,
+											)}
+										</td>
+									</tr>
+								);
+							})}
+						</tbody>
+					</table>
+				)
+			}
+		</section>
+	</div>
+</Layout>

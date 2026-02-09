@@ -1,9 +1,10 @@
-import type { TypedPocketBase, Payment } from "@/types";
+import type { TypedPocketBase, PaymentsResponse, PaymentsStatusOptions } from "@/pocketbase-types";
+import { cache, cacheKey } from "@/lib/cache";
 
 export interface PaymentFilters {
-  budgetId?: string;
   projectId?: string;
-  billId?: string;
+  obligationId?: string;
+  status?: PaymentsStatusOptions;
   year?: number;
 }
 
@@ -13,40 +14,65 @@ export interface PaymentFilters {
 export async function getPayments(
   pb: TypedPocketBase,
   filters?: PaymentFilters
-): Promise<Payment[]> {
-  const filterParts: string[] = [];
+): Promise<PaymentsResponse[]> {
+  const filterKey = filters
+    ? [
+        filters.projectId ?? "",
+        filters.obligationId ?? "",
+        filters.status ?? "",
+        filters.year ?? "",
+      ].join(":")
+    : "all";
+  return cache.getOrFetch(
+    cacheKey(pb, "payments", filterKey),
+    () => {
+      const filterParts: string[] = [];
 
-  if (filters?.budgetId) {
-    filterParts.push(`budget = "${filters.budgetId}"`);
-  }
-  if (filters?.projectId) {
-    filterParts.push(`project = "${filters.projectId}"`);
-  }
-  if (filters?.billId) {
-    filterParts.push(`bill = "${filters.billId}"`);
-  }
-  if (filters?.year) {
-    const yearStart = `${filters.year}-01-01`;
-    const yearEnd = `${filters.year}-12-31`;
-    filterParts.push(`(created >= "${yearStart}" && created <= "${yearEnd}")`);
-  }
+      if (filters?.projectId) {
+        filterParts.push(`project = "${filters.projectId}"`);
+      }
+      if (filters?.obligationId) {
+        filterParts.push(`obligation = "${filters.obligationId}"`);
+      }
+      if (filters?.status) {
+        filterParts.push(`status = "${filters.status}"`);
+      }
+      if (filters?.year) {
+        const yearStart = `${filters.year}-01-01`;
+        const yearEnd = `${filters.year}-12-31`;
+        filterParts.push(`(created >= "${yearStart}" && created <= "${yearEnd}")`);
+      }
 
-  return pb.collection("payments").getFullList<Payment>({
-    filter: filterParts.length > 0 ? filterParts.join(" && ") : undefined,
-    sort: "-created",
-    expand: "budget,bill,project",
-  });
+      return pb.collection("payments").getFullList<PaymentsResponse>({
+        filter: filterParts.length > 0 ? filterParts.join(" && ") : undefined,
+        sort: "-created",
+        expand: "project,obligation",
+      });
+    },
+    60
+  );
 }
 
 /**
- * Get payments by budget ID for a specific year
+ * Get a single payment by ID
  */
-export async function getPaymentsByBudget(
+export async function getPaymentById(
   pb: TypedPocketBase,
-  budgetId: string,
-  year?: number
-): Promise<Payment[]> {
-  return getPayments(pb, { budgetId, year });
+  id: string
+): Promise<PaymentsResponse | null> {
+  return cache.getOrFetch(
+    cacheKey(pb, "payment", id),
+    async () => {
+      try {
+        return await pb.collection("payments").getOne<PaymentsResponse>(id, {
+          expand: "project,obligation",
+        });
+      } catch {
+        return null;
+      }
+    },
+    60
+  );
 }
 
 /**
@@ -55,24 +81,72 @@ export async function getPaymentsByBudget(
 export async function getPaymentsByProject(
   pb: TypedPocketBase,
   projectId: string
-): Promise<Payment[]> {
+): Promise<PaymentsResponse[]> {
   return getPayments(pb, { projectId });
 }
 
 /**
- * Get payments by bill ID
+ * Get payments by status
  */
-export async function getPaymentsByBill(
+export async function getPaymentsByStatus(
   pb: TypedPocketBase,
-  billId: string
-): Promise<Payment[]> {
-  return getPayments(pb, { billId });
+  status: PaymentsStatusOptions
+): Promise<PaymentsResponse[]> {
+  return getPayments(pb, { status });
+}
+
+/**
+ * Get upcoming payments (status = planned, with due_date >= today)
+ */
+export async function getUpcomingPayments(
+  pb: TypedPocketBase,
+  limit?: number
+): Promise<PaymentsResponse[]> {
+  return cache.getOrFetch(
+    cacheKey(pb, "payments", "upcoming", String(limit ?? "all")),
+    async () => {
+      const allPayments = await pb.collection("payments").getFullList<PaymentsResponse>({
+        filter: `status = "planned"`,
+        sort: "due_date",
+        expand: "project,obligation",
+      });
+      const now = new Date();
+      const upcoming = allPayments.filter(
+        (p) => p.due_date && new Date(p.due_date) >= now
+      );
+      return limit ? upcoming.slice(0, limit) : upcoming;
+    },
+    60
+  );
+}
+
+/**
+ * Get overdue payments (status = planned, with due_date < today)
+ */
+export async function getOverduePayments(
+  pb: TypedPocketBase
+): Promise<PaymentsResponse[]> {
+  return cache.getOrFetch(
+    cacheKey(pb, "payments", "overdue"),
+    async () => {
+      const allPayments = await pb.collection("payments").getFullList<PaymentsResponse>({
+        filter: `status = "planned"`,
+        sort: "due_date",
+        expand: "project,obligation",
+      });
+      const now = new Date();
+      return allPayments.filter(
+        (p) => p.due_date && new Date(p.due_date) < now
+      );
+    },
+    60
+  );
 }
 
 /**
  * Filter payments by year (for client-side filtering)
  */
-export function filterPaymentsByYear(payments: Payment[], year: number): Payment[] {
+export function filterPaymentsByYear(payments: PaymentsResponse[], year: number): PaymentsResponse[] {
   const yearStart = `${year}-01-01`;
   const yearEnd = `${year}-12-31`;
   return payments.filter((p) => {
@@ -82,8 +156,17 @@ export function filterPaymentsByYear(payments: Payment[], year: number): Payment
 }
 
 /**
- * Calculate total paid amount
+ * Calculate total paid amount (only payments with status "paid")
  */
-export function calculatePaymentTotal(payments: Payment[]): number {
+export function calculatePaidTotal(payments: PaymentsResponse[]): number {
+  return payments
+    .filter((p) => p.status === "paid")
+    .reduce((sum, p) => sum + (p.amount || 0), 0);
+}
+
+/**
+ * Calculate total amount for all payments regardless of status
+ */
+export function calculatePaymentTotal(payments: PaymentsResponse[]): number {
   return payments.reduce((sum, p) => sum + (p.amount || 0), 0);
 }

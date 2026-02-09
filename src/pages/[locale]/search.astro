@@ -1,6 +1,10 @@
 ---
 import Layout from "@/layouts/Layout.astro";
-import type { Project, Bill, BudgetItem, Budget } from "@/types";
+import type {
+  BudgetItemWithBudgetExpand,
+  ProjectWithPhaseExpand,
+} from "@/lib/data";
+import type { PaymentsResponse } from "@/pocketbase-types";
 import {
 	getLangFromUrl,
 	useTranslations,
@@ -17,27 +21,27 @@ const pb = Astro.locals.pb;
 const url = new URL(Astro.request.url);
 const query = url.searchParams.get("q")?.trim() || "";
 
-let projects: Project[] = [];
-let bills: Bill[] = [];
-let budgetItems: BudgetItem[] = [];
+let projects: ProjectWithPhaseExpand[] = [];
+let payments: PaymentsResponse[] = [];
+let budgetItems: BudgetItemWithBudgetExpand[] = [];
 
 if (query) {
 	try {
 		const searchFilter = (fields: string[]) =>
 			fields.map((f) => `${f}~"${query}"`).join(" || ");
 
-		const [projectsRes, billsRes, budgetItemsRes] = await Promise.all([
-			pb.collection("projects").getFullList<Project>({
+		const [projectsRes, paymentsRes, budgetItemsRes] = await Promise.all([
+			pb.collection("projects").getFullList<ProjectWithPhaseExpand>({
 				filter: searchFilter(["name", "ref", "slug"]),
 				sort: "-created",
 				expand: "phase",
 			}),
-			pb.collection("bills").getFullList<Bill>({
-				filter: searchFilter(["name", "ref", "note"]),
+			pb.collection("payments").getFullList<PaymentsResponse>({
+				filter: searchFilter(["name", "ref"]),
 				sort: "-created",
-				expand: "budget",
+				expand: "project,obligation",
 			}),
-			pb.collection("budget_items").getFullList<BudgetItem>({
+			pb.collection("budget_items").getFullList<BudgetItemWithBudgetExpand>({
 				filter: searchFilter(["note"]),
 				sort: "-year",
 				expand: "budget",
@@ -45,20 +49,20 @@ if (query) {
 		]);
 
 		projects = projectsRes;
-		bills = billsRes;
+		payments = paymentsRes;
 		budgetItems = budgetItemsRes;
 	} catch (e) {
 		console.error("Error searching:", e);
 	}
 }
 
-const totalResults = projects.length + bills.length + budgetItems.length;
+const totalResults = projects.length + payments.length + budgetItems.length;
 const hasQuery = query.length > 0;
 const basePath = getLocalizedPath("/search", lang);
 ---
 
 <Layout>
-	<div class="space-y-20 md:space-y-28">
+	<div class="space-y-24">
 		<!-- Header -->
 		<section>
 			<h1 class="page-title">{t("search.title")}</h1>
@@ -113,9 +117,9 @@ const basePath = getLocalizedPath("/search", lang);
 							</div>
 							<div>
 								<span class="stat-label">
-									{t("search.bills")}
+									{t("search.payments")}
 								</span>
-								<p class="stat-number-md">{bills.length}</p>
+								<p class="stat-number-md">{payments.length}</p>
 							</div>
 							<div>
 								<span class="stat-label">
@@ -165,7 +169,7 @@ const basePath = getLocalizedPath("/search", lang);
 													class="clickable"
 													onclick={`window.location.href='${getLocalizedPath(`/projects/${project.id}`, lang)}'`}
 												>
-													<td class="mono text-muted-foreground text-sm align-middle">
+													<td class="mono text-muted-foreground align-middle">
 														{project.slug ||
 															project.ref}
 													</td>
@@ -226,17 +230,18 @@ const basePath = getLocalizedPath("/search", lang);
 								</section>
 							)}
 
-							{/* Bills Results */}
-							{bills.length > 0 && (
+							{/* Payments Results */}
+							{payments.length > 0 && (
 								<section>
 									<h2 class="section-title">
-										{t("search.bills")}
+										{t("search.payments")}
 									</h2>
 									<table class="data-table">
 										<thead>
 											<tr>
 												<th>{t("table.ref")}</th>
-												<th>{t("table.bill")}</th>
+												<th>{t("payments.payment")}</th>
+												<th>{t("table.status")}</th>
 												<th>{t("table.due")}</th>
 												<th class="text-right">
 													{t("table.amount")}
@@ -244,35 +249,48 @@ const basePath = getLocalizedPath("/search", lang);
 											</tr>
 										</thead>
 										<tbody>
-											{bills.map((bill) => (
+											{payments.map((payment) => (
 												<tr
 													class="clickable"
-													onclick={`window.location.href='${getLocalizedPath(`/bills/${bill.id}`, lang)}'`}
+													onclick={`window.location.href='${getLocalizedPath(`/payments/${payment.id}`, lang)}'`}
 												>
-													<td class="mono text-muted-foreground text-sm align-middle">
-														{bill.ref || "—"}
+													<td class="mono text-muted-foreground align-middle">
+														{payment.ref || "—"}
 													</td>
 													<td class="align-middle">
 														<p class="font-medium text-base">
-															{bill.name}
+															{payment.name}
 														</p>
-														{bill.note && (
-															<p class="text-sm text-muted-foreground line-clamp-1 mt-1">
-																{bill.note}
-															</p>
-														)}
+													</td>
+													<td class="align-middle">
+														<span
+															class:list={[
+																"badge text-xs",
+																payment.status === "paid"
+																	? "badge-success"
+																	: payment.status === "pending"
+																		? "badge-info"
+																		: "badge-warning",
+															]}
+														>
+															{payment.status === "paid"
+																? t("payments.paid")
+																: payment.status === "pending"
+																	? t("payments.pending")
+																	: t("payments.planned")}
+														</span>
 													</td>
 													<td class="text-muted-foreground align-middle">
-														{bill.due_date
+														{payment.due_date
 															? formatDate(
-																	bill.due_date,
+																	payment.due_date,
 																	lang,
 																)
 															: "—"}
 													</td>
 													<td class="text-right font-medium arshid text-base align-middle">
 														{formatCurrency(
-															bill.amount || 0,
+															payment.amount || 0,
 															lang,
 														)}
 													</td>

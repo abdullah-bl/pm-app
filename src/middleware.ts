@@ -2,7 +2,7 @@ import { defineMiddleware } from "astro:middleware";
 import { isAuth } from "@/lib/isAuth";
 import { languages, defaultLang, type Lang } from "@/i18n/ui";
 import pb from "./client";
-import type { TypedPocketBase } from "./types";
+import type { TypedPocketBase } from "./pocketbase-types";
 
 // Routes that don't require authentication (without locale prefix)
 const PUBLIC_ROUTES = ["/login"] as const;

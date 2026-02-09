@@ -13,8 +13,10 @@ import {
 	formatCurrency,
 	formatDateFull,
 } from "@/i18n/utils";
-import { getProjectWithDetails } from "@/lib/data";
-import type { Project, ProjectLog } from "@/types";
+import {
+	getProjectWithDetails,
+	type ProjectWithExpand,
+} from "@/lib/data";
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
@@ -30,7 +32,7 @@ const payments = data?.payments ?? [];
 const logs = data?.logs ?? [];
 
 // Helper to get file URL from PocketBase
-const getFileUrl = (record: Project, filename: string) => {
+const getFileUrl = (record: ProjectWithExpand, filename: string) => {
 	return pb.files.getURL(record, filename);
 };
 
@@ -43,7 +45,10 @@ const totalObligatedCost = obligations.reduce(
 	(sum, o) => sum + (o.cost || 0),
 	0,
 );
-const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+// Only count payments with status "paid" as spent
+const totalPaid = payments
+	.filter((p) => p.status === "paid")
+	.reduce((sum, p) => sum + (p.amount || 0), 0);
 const remaining = totalObligatedCash - totalPaid;
 
 const backPath = getLocalizedPath("/projects", lang);
@@ -58,13 +63,13 @@ const backPath = getLocalizedPath("/projects", lang);
 				</p>
 				<a
 					href={backPath}
-					class="text-sm text-muted-foreground hover:text-foreground mt-4 inline-block"
+					class="text-base text-muted-foreground hover:text-foreground mt-4 inline-block"
 				>
 					← {t("detail.backToProjects")}
 				</a>
 			</div>
 		) : (
-			<div class="space-y-20 md:space-y-28">
+			<div class="space-y-24">
 				{/* Header */}
 				<PageHeader
 					title={project.name}
@@ -324,7 +329,7 @@ const backPath = getLocalizedPath("/projects", lang);
 							<tbody>
 								{obligations.map((obligation) => (
 									<tr>
-										<td class="mono text-muted-foreground text-sm align-middle">
+										<td class="mono text-muted-foreground align-middle">
 											{obligation.ref}
 										</td>
 										<td class="align-middle font-medium">
@@ -376,13 +381,12 @@ const backPath = getLocalizedPath("/projects", lang);
 							<tbody>
 								{payments.map((payment) => (
 									<tr>
-										<td class="arshid text-muted-foreground text-sm align-middle">
+										<td class="arshid text-muted-foreground align-middle">
 											{payment.ref}
 										</td>
-										<td class="align-middle font-medium">
-											{payment.expand?.budget?.name ||
-												"—"}
-										</td>
+									<td class="align-middle font-medium">
+										{payment.name || "—"}
+									</td>
 										<td class="text-muted-foreground align-middle">
 											{formatDateFull(
 												payment.created,

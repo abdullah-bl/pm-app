@@ -12,7 +12,7 @@ export const ui = {
     // Navigation
     "nav.overview": "Overview",
     "nav.projects": "Projects",
-    "nav.bills": "Bills",
+    "nav.payments": "Payments",
     "nav.budget": "Budget",
     "nav.search": "Search",
 
@@ -22,11 +22,13 @@ export const ui = {
     "dashboard.budgetSummary": "Budget Summary",
     "dashboard.activity": "Activity",
     "dashboard.activeProjects": "Active Projects",
-    "dashboard.upcomingBills": "Upcoming Bills",
+    "dashboard.plannedPayments": "Planned Payments",
     "dashboard.recentPayments": "Recent Payments",
-    "dashboard.viewAll": "View all →",
+    "dashboard.pendingPayments": "Pending Payments",
+    "dashboard.paymentsOverview": "Payments Overview",
+    "dashboard.viewAll": "View all",
     "dashboard.noActiveProjects": "No active projects",
-    "dashboard.noUpcomingBills": "No upcoming bills",
+    "dashboard.noPlannedPayments": "No planned payments",
     "dashboard.noPaymentsThisYear": "No payments this year",
 
     // Budget labels
@@ -69,15 +71,18 @@ export const ui = {
     "table.timeline": "Timeline",
     "table.team": "Team",
     "table.status": "Status",
-    "table.bill": "Bill",
     "table.due": "Due",
     "table.amount": "Amount",
     "table.date": "Date",
 
-    // Bills page
-    "bills.title": "Bills",
-    "bills.subtitle": "Track and manage your recurring bills",
-    "bills.noBillsFound": "No bills found",
+    // Payments page
+    "payments.title": "Payments",
+    "payments.subtitle": "Track and manage your payments",
+    "payments.payment": "Payment",
+    "payments.noPaymentsFound": "No payments found",
+    "payments.planned": "Planned",
+    "payments.pending": "Pending",
+    "payments.paid": "Paid",
 
     // Budget page
     "budget.title": "Budget",
@@ -102,8 +107,6 @@ export const ui = {
     "budget.noPaymentsFound": "No payments found for",
     "budget.noTransfersFound": "No transfers found for",
     "budget.noObligationsFound": "No obligations found for",
-    "budget.billProject": "Bill / Project",
-    "budget.projectBill": "Project / Bill",
     "budget.subTotal": "Sub Total",
     "budget.subTotalObligated": "Sub Total Obligated",
     "budget.subTotalRemaining": "Sub Total Remaining",
@@ -124,13 +127,13 @@ export const ui = {
 
     // Search page
     "search.title": "Search",
-    "search.subtitle": "Find projects, bills, and budget items",
+    "search.subtitle": "Find projects, payments, and budget items",
     "search.placeholder": "Search by name, reference, or note...",
     "search.resultsFor": "Results for",
     "search.noResults": "No results found",
     "search.tryDifferent": "Try a different search term",
     "search.projects": "Projects",
-    "search.bills": "Bills",
+    "search.payments": "Payments",
     "search.budgetItems": "Budget Items",
     "search.totalResults": "Total Results",
     "search.enterQuery": "Enter a search term to find items",
@@ -138,10 +141,10 @@ export const ui = {
     // Detail pages
     "detail.back": "Back",
     "detail.backToProjects": "Back to Projects",
-    "detail.backToBills": "Back to Bills",
+    "detail.backToPayments": "Back to Payments",
     "detail.backToBudget": "Back to Budget",
     "detail.projectNotFound": "Project not found",
-    "detail.billNotFound": "Bill not found",
+    "detail.paymentNotFound": "Payment not found",
     "detail.budgetItemNotFound": "Budget item not found",
     "detail.overview": "Overview",
     "detail.financials": "Financials",
@@ -170,7 +173,7 @@ export const ui = {
     // Navigation
     "nav.overview": "الرئيسية",
     "nav.projects": "المشاريع",
-    "nav.bills": "الفواتير",
+    "nav.payments": "المدفوعات",
     "nav.budget": "الميزانية",
     "nav.search": "بحث",
 
@@ -180,11 +183,13 @@ export const ui = {
     "dashboard.budgetSummary": "ملخص الميزانية",
     "dashboard.activity": "الحركات المالية",
     "dashboard.activeProjects": "المشاريع النشطة",
-    "dashboard.upcomingBills": "الفواتير المستحقة",
+    "dashboard.plannedPayments": "المدفوعات المخططة",
     "dashboard.recentPayments": "آخر المدفوعات",
-    "dashboard.viewAll": "← عرض جميع العناصر",
+    "dashboard.pendingPayments": "مدفوعات قيد المعالجة",
+    "dashboard.paymentsOverview": "ملخص المدفوعات",
+    "dashboard.viewAll": "عرض الكل",
     "dashboard.noActiveProjects": "لا توجد مشاريع نشطة حالياً",
-    "dashboard.noUpcomingBills": "لا توجد فواتير مستحقة",
+    "dashboard.noPlannedPayments": "لا توجد مدفوعات مخططة",
     "dashboard.noPaymentsThisYear": "لم تُسجل أي مدفوعات هذا العام",
 
     // Budget labels
@@ -227,15 +232,18 @@ export const ui = {
     "table.timeline": "الإطار الزمني",
     "table.team": "فريق العمل",
     "table.status": "الحالة",
-    "table.bill": "رقم الفاتورة",
     "table.due": "تاريخ الاستحقاق",
     "table.amount": "المبلغ المستحق",
     "table.date": "التاريخ",
 
-    // Bills page
-    "bills.title": "الفواتير",
-    "bills.subtitle": "إدارة وتتبع الفواتير المتكررة والمستحقة",
-    "bills.noBillsFound": "لا توجد فواتير مسجلة",
+    // Payments page
+    "payments.title": "المدفوعات",
+    "payments.subtitle": "إدارة وتتبع المدفوعات",
+    "payments.payment": "الدفعة",
+    "payments.noPaymentsFound": "لا توجد مدفوعات مسجلة",
+    "payments.planned": "مخطط",
+    "payments.pending": "قيد المعالجة",
+    "payments.paid": "تم الدفع",
 
     // Budget page
     "budget.title": "إدارة الميزانية",
@@ -260,8 +268,6 @@ export const ui = {
     "budget.noPaymentsFound": "لم يتم العثور على مدفوعات",
     "budget.noTransfersFound": "لم يتم العثور على تحويلات",
     "budget.noObligationsFound": "لم يتم العثور على التزامات مالية",
-    "budget.billProject": "رابط الفاتورة/المشروع",
-    "budget.projectBill": "رابط المشروع/الفاتورة",
     "budget.subTotal": "المجموع الفرعي",
     "budget.subTotalObligated": "المجموع الفرعي المخصص",
     "budget.subTotalRemaining": "المجموع الفرعي المتبقٍ",
@@ -282,13 +288,13 @@ export const ui = {
 
     // Search page
     "search.title": "البحث المتقدم",
-    "search.subtitle": "ابحث عن المشاريع والفواتير وبنود الميزانية",
+    "search.subtitle": "ابحث عن المشاريع والمدفوعات وبنود الميزانية",
     "search.placeholder": "ابحث بالاسم أو الرقم المرجعي أو محتوى الملاحظات...",
     "search.resultsFor": "نتائج البحث عن:",
     "search.noResults": "لا توجد نتائج مطابقة",
     "search.tryDifferent": "جرّب كلمات بحث أكثر تحديداً",
     "search.projects": "نتائج المشاريع",
-    "search.bills": "نتائج الفواتير",
+    "search.payments": "نتائج المدفوعات",
     "search.budgetItems": "نتائج بنود الميزانية",
     "search.totalResults": "إجمالي النتائج",
     "search.enterQuery": "اكتب مصطلح البحث لعرض النتائج",
@@ -296,10 +302,10 @@ export const ui = {
     // Detail pages
     "detail.back": "عودة",
     "detail.backToProjects": "العودة لقائمة المشاريع",
-    "detail.backToBills": "العودة لقائمة الفواتير",
+    "detail.backToPayments": "العودة لقائمة المدفوعات",
     "detail.backToBudget": "العودة لقائمة الميزانية",
     "detail.projectNotFound": "المشروع المطلوب غير موجود",
-    "detail.billNotFound": "الفاتورة المطلوبة غير موجودة",
+    "detail.paymentNotFound": "الدفعة المطلوبة غير موجودة",
     "detail.budgetItemNotFound": "بند الميزانية المطلوب غير موجود",
     "detail.overview": "البيانات الأساسية",
     "detail.financials": "البيانات المالية",

@@ -1,5 +1,5 @@
 import PocketBase from 'pocketbase';
-import type { TypedPocketBase } from './types';
+import type { TypedPocketBase } from "./pocketbase-types"
 
 
 const pb = new PocketBase(import.meta.env.PUBLIC_POCKETBASE_URL!) as TypedPocketBase;

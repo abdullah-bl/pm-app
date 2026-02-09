@@ -28,11 +28,13 @@ This application follows a stripped-back aesthetic that prioritizes content clar
 
 | Element | Class | Size |
 |---------|-------|------|
-| Stat Numbers | `.stat-number` | 60px (text-6xl) |
-| Page Title | `.page-title` | 36px (text-4xl) |
-| Section Title | `.section-title` | 12px (text-xs) uppercase |
-| Body | default | 16px |
-| Small/Labels | `.label-text` | 14px (text-sm) |
+| Stat Numbers | `.stat-number` | 48–60px (text-5xl / text-6xl) |
+| Stat Numbers (Secondary) | `.stat-number-md` | 36–48px (text-4xl / text-5xl) |
+| Page Title | `.page-title` | 36–48px (text-4xl / text-5xl) |
+| Section Title | `.section-title` | 14px (text-sm) uppercase |
+| Body | default | 16px (text-base) |
+| Stat Labels | `.stat-label` | 16px (text-base) |
+| Labels | `.label-text` | 16px (text-base) |
 
 ### Principles
 
@@ -79,7 +81,7 @@ This application follows a stripped-back aesthetic that prioritizes content clar
 
 | Context | Spacing |
 |---------|---------|
-| Between major sections | `space-y-24` (96px) |
+| Between major sections | `space-y-24` (96px) — consistent across all pages |
 | Between stats grid items | `gap-16` (64px) |
 | Section title to content | `mb-8` (32px) |
 | Table row padding | `py-5` (20px) |

@@ -1,5 +1,9 @@
 /// <reference path="../pb_data/types.d.ts" />
 migrate((app) => {
+  const collection = app.findCollectionByNameOrId("pbc_1563197011");
+
+  return app.delete(collection);
+}, (app) => {
   const collection = new Collection({
     "createRule": null,
     "deleteRule": null,
@@ -33,13 +37,27 @@ migrate((app) => {
         "type": "text"
       },
       {
-        "cascadeDelete": false,
-        "collectionId": "pbc_1155631669",
+        "autogeneratePattern": "",
         "hidden": false,
-        "id": "relation917219000",
+        "id": "text1579384326",
+        "max": 0,
+        "min": 0,
+        "name": "name",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "pbc_2502820922",
+        "hidden": false,
+        "id": "relation1945302907",
         "maxSelect": 1,
         "minSelect": 0,
-        "name": "budget_id",
+        "name": "budget",
         "presentable": false,
         "required": false,
         "system": false,
@@ -58,43 +76,29 @@ migrate((app) => {
         "type": "number"
       },
       {
-        "cascadeDelete": false,
-        "collectionId": "pbc_1563197011",
         "hidden": false,
-        "id": "relation445387509",
-        "maxSelect": 1,
-        "minSelect": 0,
-        "name": "bill_id",
+        "id": "date3866337329",
+        "max": "",
+        "min": "",
+        "name": "due_date",
         "presentable": false,
         "required": false,
         "system": false,
-        "type": "relation"
+        "type": "date"
       },
       {
-        "cascadeDelete": false,
-        "collectionId": "pbc_1317492651",
+        "autogeneratePattern": "",
         "hidden": false,
-        "id": "relation3752200791",
-        "maxSelect": 1,
-        "minSelect": 0,
-        "name": "obligation_id",
+        "id": "text3485334036",
+        "max": 0,
+        "min": 0,
+        "name": "note",
+        "pattern": "",
         "presentable": false,
+        "primaryKey": false,
         "required": false,
         "system": false,
-        "type": "relation"
-      },
-      {
-        "cascadeDelete": false,
-        "collectionId": "pbc_3202395908",
-        "hidden": false,
-        "id": "relation376250268",
-        "maxSelect": 1,
-        "minSelect": 0,
-        "name": "project_id",
-        "presentable": false,
-        "required": false,
-        "system": false,
-        "type": "relation"
+        "type": "text"
       },
       {
         "hidden": false,
@@ -131,10 +135,13 @@ migrate((app) => {
         "type": "autodate"
       }
     ],
-    "id": "pbc_631030571",
-    "indexes": [],
+    "id": "pbc_1563197011",
+    "indexes": [
+      "CREATE INDEX `idx_AqIjLya3jx` ON `bills` (`name`)",
+      "CREATE INDEX `idx_j2jcrCNMF1` ON `bills` (`budget`)"
+    ],
     "listRule": "",
-    "name": "payments",
+    "name": "bills",
     "system": false,
     "type": "base",
     "updateRule": null,
@@ -142,8 +149,4 @@ migrate((app) => {
   });
 
   return app.save(collection);
-}, (app) => {
-  const collection = app.findCollectionByNameOrId("pbc_631030571");
-
-  return app.delete(collection);
 })

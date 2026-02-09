@@ -1,11 +1,13 @@
 // src/lib/permissions.ts
-import type { User } from '@/types';
+import type { UsersResponse } from "@/pocketbase-types";
+
+/** App user shape (subset used in permissions and assignees) */
+export type User = Pick<UsersResponse, "id" | "name" | "email">;
 
 export type Role = 'admin' | 'manager' | 'budgeter' | 'viewer';
 export type Action = 'view' | 'create' | 'edit' | 'delete';
 export type Resource =
     | 'projects'
-    | 'bills'
     | 'budgets'
     | 'budget_items'
     | 'payments'
@@ -14,7 +16,7 @@ export type Resource =
 
 // All resources for convenience
 const ALL_RESOURCES: Resource[] = [
-    'projects', 'bills', 'budgets', 'budget_items',
+    'projects', 'budgets', 'budget_items',
     'payments', 'obligations', 'transfers'
 ];
 
@@ -27,20 +29,20 @@ const permissions: Record<Role, Record<Action, Resource[]>> = {
     },
     budgeter: {
         // Can view everything budget-related including what's obligated
-        view: ['budgets', 'budget_items', 'obligations', 'payments', 'transfers', 'bills'],
+        view: ['budgets', 'budget_items', 'obligations', 'payments', 'transfers'],
         create: ['budget_items', 'transfers'],
         edit: ['budget_items', 'transfers'],
         delete: ['budget_items'], // careful with transfers
     },
     manager: {
         // Project managers - can manage projects and their financials
-        view: ['projects', 'payments', 'obligations', 'bills', 'budgets'],
+        view: ['projects', 'payments', 'obligations', 'budgets'],
         create: ['projects', 'payments', 'obligations'],
         edit: ['projects', 'payments', 'obligations'],
         delete: [],
     },
     viewer: {
-        view: ['projects', 'payments', 'obligations', 'bills', 'budgets'],
+        view: ['projects', 'payments', 'obligations', 'budgets'],
         create: [],
         edit: [],
         delete: [],

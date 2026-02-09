@@ -143,43 +143,43 @@
 	@apply text-left;
 }
 
-/* Large display numbers - 60px for scannable metrics */
+/* Large display numbers - scannable hero metrics */
 .stat-number {
-	@apply text-4xl md:text-5xl font-bold tracking-tight tabular-nums font-mono leading-none;
+	@apply text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight tabular-nums font-mono leading-none;
 }
 
 /* Medium stat numbers for secondary metrics */
 .stat-number-md {
-	@apply text-3xl md:text-4xl font-bold tracking-tight tabular-nums font-mono leading-none;
+	@apply text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight tabular-nums font-mono leading-none;
 }
 
 .arshid {
 	font-family: 'Arshid', sans-serif;
 }
 
-/* Section title - 12px uppercase with wide tracking */
+/* Section title - uppercase with wide tracking */
 .section-title {
-	@apply text-xs font-medium uppercase tracking-widest text-muted-foreground mb-6;
+	@apply text-sm font-medium uppercase tracking-widest text-muted-foreground mb-8;
 }
 
-/* Large page title - 36px bold with tight tracking */
+/* Large page title - bold with tight tracking */
 .page-title {
-	@apply text-3xl md:text-4xl font-bold tracking-tight leading-tight;
+	@apply text-4xl md:text-5xl font-bold tracking-tight leading-tight;
 }
 
 /* Page subtitle */
 .page-subtitle {
-	@apply text-lg text-muted-foreground mt-2;
+	@apply text-lg text-muted-foreground mt-3;
 }
 
 /* Stat label - positioned above stat numbers */
 .stat-label {
-	@apply text-sm text-muted-foreground mb-2 block;
+	@apply text-base text-muted-foreground mb-3 block;
 }
 
 /* Subtle label */
 .label-text {
-	@apply text-sm text-muted-foreground;
+	@apply text-base text-muted-foreground;
 }
 
 /* Table styling - generous vertical padding for readability */
@@ -188,11 +188,11 @@
 }
 
 .data-table th {
-	@apply text-left text-xs font-medium uppercase tracking-widest text-muted-foreground pb-4 border-b border-border;
+	@apply text-left text-sm font-medium uppercase tracking-widest text-muted-foreground pb-5 border-b border-border;
 }
 
 .data-table td {
-	@apply py-6 border-b border-border align-top;
+	@apply py-5 border-b border-border align-top text-base;
 }
 
 .data-table tr:last-child td {
@@ -211,7 +211,7 @@
 
 /* Status badges - small pill-shaped indicators */
 .badge {
-	@apply inline-flex items-center px-2.5 py-1 font-medium text-lg rounded-full;
+	@apply inline-flex items-center px-2.5 py-1 font-medium text-base rounded-full;
 }
 
 .badge-active {

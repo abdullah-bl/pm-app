@@ -1,9 +1,9 @@
-// Re-export all data fetching functions
+// Re-export all data fetching functions and expand types
 
+export * from "./expand-types";
 export * from "./projects";
 export * from "./phases";
 export * from "./budgets";
-export * from "./bills";
 export * from "./obligations";
 export * from "./payments";
 export * from "./transfers";

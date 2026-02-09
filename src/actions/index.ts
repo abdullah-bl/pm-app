@@ -7,7 +7,7 @@ import { budgets } from "./budgets";
  * For data fetching, use @/lib/data instead:
  * - getProjects, getProjectWithDetails, etc.
  * - getBudgets, getBudgetWithDetails, etc.
- * - getBills, getBillWithDetails, etc.
+ * - getPayments, getPaymentById, etc.
  * 
  * Actions are called from the client-side via forms or JavaScript:
  * - import { actions } from "astro:actions";

@@ -1,4 +1,15 @@
-import type { TypedPocketBase, Project, Phase, Obligation, Payment, ProjectLog } from "@/types";
+import type {
+  TypedPocketBase,
+  ProjectsResponse,
+  PhasesResponse,
+} from "@/pocketbase-types";
+import { cache, cacheKey } from "@/lib/cache";
+import type {
+  ObligationWithExpand,
+  PaymentWithExpand,
+  ProjectLogWithExpand,
+  ProjectWithExpand,
+} from "./expand-types";
 
 export interface ProjectFilters {
   phase?: string;
@@ -7,11 +18,11 @@ export interface ProjectFilters {
 }
 
 export interface ProjectWithDetails {
-  project: Project;
-  allPhases: Phase[];
-  obligations: Obligation[];
-  payments: Payment[];
-  logs: ProjectLog[];
+  project: ProjectWithExpand;
+  allPhases: PhasesResponse[];
+  obligations: ObligationWithExpand[];
+  payments: PaymentWithExpand[];
+  logs: ProjectLogWithExpand[];
 }
 
 /**
@@ -20,46 +31,55 @@ export interface ProjectWithDetails {
 export async function getProjects(
   pb: TypedPocketBase,
   filters?: ProjectFilters
-): Promise<{ projects: Project[]; phases: Phase[] }> {
-  const [projects, phases] = await Promise.all([
-    pb.collection("projects").getFullList<Project>({
-      sort: "-ref",
-      expand: "phase,assignee",
-    }),
-    pb.collection("phases").getFullList<Phase>({
-      sort: "order",
-    }),
-  ]);
+): Promise<{ projects: ProjectsResponse[]; phases: PhasesResponse[] }> {
+  const filterKey = filters
+    ? [filters.phase ?? "", filters.active ?? "", filters.year ?? ""].join(":")
+    : "all";
+  return cache.getOrFetch(
+    cacheKey(pb, "projects", filterKey),
+    async () => {
+      const [projects, phases] = await Promise.all([
+        pb.collection("projects").getFullList<ProjectsResponse>({
+          sort: "-ref",
+          expand: "phase,assignee",
+        }),
+        pb.collection("phases").getFullList<PhasesResponse>({
+          sort: "order",
+        }),
+      ]);
 
-  let filteredProjects = projects;
+      let filteredProjects = projects;
 
-  if (filters?.phase) {
-    filteredProjects = filteredProjects.filter((p) => p.phase === filters.phase);
-  }
-
-  if (filters?.active === true) {
-    filteredProjects = filteredProjects.filter((p) => p.active);
-  } else if (filters?.active === false) {
-    filteredProjects = filteredProjects.filter((p) => !p.active);
-  }
-
-  if (filters?.year) {
-    const year = filters.year;
-    filteredProjects = filteredProjects.filter((p) => {
-      const startYear = p.start_date ? new Date(p.start_date).getFullYear() : null;
-      const endYear = p.end_date ? new Date(p.end_date).getFullYear() : null;
-      if (startYear && endYear) {
-        return startYear <= year && year <= endYear;
-      } else if (startYear) {
-        return startYear <= year;
-      } else if (endYear) {
-        return year <= endYear;
+      if (filters?.phase) {
+        filteredProjects = filteredProjects.filter((p) => p.phase === filters.phase);
       }
-      return true;
-    });
-  }
 
-  return { projects: filteredProjects, phases };
+      if (filters?.active === true) {
+        filteredProjects = filteredProjects.filter((p) => p.active);
+      } else if (filters?.active === false) {
+        filteredProjects = filteredProjects.filter((p) => !p.active);
+      }
+
+      if (filters?.year) {
+        const year = filters.year;
+        filteredProjects = filteredProjects.filter((p) => {
+          const startYear = p.start_date ? new Date(p.start_date).getFullYear() : null;
+          const endYear = p.end_date ? new Date(p.end_date).getFullYear() : null;
+          if (startYear && endYear) {
+            return startYear <= year && year <= endYear;
+          } else if (startYear) {
+            return startYear <= year;
+          } else if (endYear) {
+            return year <= endYear;
+          }
+          return true;
+        });
+      }
+
+      return { projects: filteredProjects, phases };
+    },
+    60
+  );
 }
 
 /**
@@ -68,14 +88,20 @@ export async function getProjects(
 export async function getProjectById(
   pb: TypedPocketBase,
   id: string
-): Promise<Project | null> {
-  try {
-    return await pb.collection("projects").getOne<Project>(id, {
-      expand: "phase,assignee",
-    });
-  } catch {
-    return null;
-  }
+): Promise<ProjectsResponse | null> {
+  return cache.getOrFetch(
+    cacheKey(pb, "project", id),
+    async () => {
+      try {
+        return await pb.collection("projects").getOne<ProjectsResponse>(id, {
+          expand: "phase,assignee",
+        });
+      } catch {
+        return null;
+      }
+    },
+    60
+  );
 }
 
 /**
@@ -85,35 +111,41 @@ export async function getProjectWithDetails(
   pb: TypedPocketBase,
   id: string
 ): Promise<ProjectWithDetails | null> {
-  try {
-    const [project, allPhases, obligations, payments, logs] = await Promise.all([
-      pb.collection("projects").getOne<Project>(id, {
-        expand: "phase,assignee",
-      }),
-      pb.collection("phases").getFullList<Phase>({
-        sort: "order",
-      }),
-      pb.collection("obligations").getFullList<Obligation>({
-        filter: `project = "${id}"`,
-        sort: "-date",
-        expand: "budget,bill,project",
-      }),
-      pb.collection("payments").getFullList<Payment>({
-        filter: `project = "${id}"`,
-        sort: "-created",
-        expand: "budget,bill,project",
-      }),
-      pb.collection("project_logs").getFullList<ProjectLog>({
-        filter: `project = "${id}"`,
-        sort: "-created",
-        expand: "phase,previous_phase,by",
-      }),
-    ]);
+  return cache.getOrFetch(
+    cacheKey(pb, "project", id, "details"),
+    async () => {
+      try {
+        const [project, allPhases, obligations, payments, logs] = await Promise.all([
+          pb.collection("projects").getOne<ProjectWithExpand>(id, {
+            expand: "phase,assignee",
+          }),
+          pb.collection("phases").getFullList<PhasesResponse>({
+            sort: "order",
+          }),
+          pb.collection("obligations").getFullList<ObligationWithExpand>({
+            filter: `project = "${id}"`,
+            sort: "-date",
+            expand: "budget,project",
+          }),
+          pb.collection("payments").getFullList<PaymentWithExpand>({
+            filter: `project = "${id}"`,
+            sort: "-created",
+            expand: "project,obligation",
+          }),
+          pb.collection("project_logs").getFullList<ProjectLogWithExpand>({
+            filter: `project = "${id}"`,
+            sort: "-created",
+            expand: "phase,previous_phase,by",
+          }),
+        ]);
 
-    return { project, allPhases, obligations, payments, logs };
-  } catch {
-    return null;
-  }
+        return { project, allPhases, obligations, payments, logs };
+      } catch {
+        return null;
+      }
+    },
+    60
+  );
 }
 
 /**
@@ -122,20 +154,26 @@ export async function getProjectWithDetails(
 export async function getActiveProjects(
   pb: TypedPocketBase,
   limit?: number
-): Promise<Project[]> {
-  const projects = await pb.collection("projects").getFullList<Project>({
-    sort: "-created",
-    filter: "active=true",
-    expand: "phase",
-  });
+): Promise<ProjectsResponse[]> {
+  return cache.getOrFetch(
+    cacheKey(pb, "projects", "active", String(limit ?? "all")),
+    async () => {
+      const projects = await pb.collection("projects").getFullList<ProjectsResponse>({
+        sort: "-created",
+        filter: "active=true",
+        expand: "phase",
+      });
 
-  return limit ? projects.slice(0, limit) : projects;
+      return limit ? projects.slice(0, limit) : projects;
+    },
+    60
+  );
 }
 
 /**
  * Get unique years from project dates
  */
-export function getProjectYears(projects: Project[]): number[] {
+export function getProjectYears(projects: ProjectsResponse[]): number[] {
   const years = new Set<number>();
   projects.forEach((p) => {
     if (p.start_date) years.add(new Date(p.start_date).getFullYear());

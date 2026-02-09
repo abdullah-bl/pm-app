@@ -1,4 +1,5 @@
-import type { TypedPocketBase, Transfer } from "@/types";
+import type { TypedPocketBase, TransfersResponse } from "@/pocketbase-types";
+import { cache, cacheKey } from "@/lib/cache";
 
 export interface TransferFilters {
   budgetId?: string;
@@ -11,23 +12,32 @@ export interface TransferFilters {
 export async function getTransfers(
   pb: TypedPocketBase,
   filters?: TransferFilters
-): Promise<Transfer[]> {
-  const filterParts: string[] = [];
+): Promise<TransfersResponse[]> {
+  const filterKey = filters
+    ? [filters.budgetId ?? "", filters.year ?? ""].join(":")
+    : "all";
+  return cache.getOrFetch(
+    cacheKey(pb, "transfers", filterKey),
+    () => {
+      const filterParts: string[] = [];
 
-  if (filters?.budgetId) {
-    filterParts.push(`(from = "${filters.budgetId}" || to = "${filters.budgetId}")`);
-  }
-  if (filters?.year) {
-    const yearStart = `${filters.year}-01-01`;
-    const yearEnd = `${filters.year}-12-31`;
-    filterParts.push(`(created >= "${yearStart}" && created <= "${yearEnd}")`);
-  }
+      if (filters?.budgetId) {
+        filterParts.push(`(from = "${filters.budgetId}" || to = "${filters.budgetId}")`);
+      }
+      if (filters?.year) {
+        const yearStart = `${filters.year}-01-01`;
+        const yearEnd = `${filters.year}-12-31`;
+        filterParts.push(`(created >= "${yearStart}" && created <= "${yearEnd}")`);
+      }
 
-  return pb.collection("transfers").getFullList<Transfer>({
-    filter: filterParts.length > 0 ? filterParts.join(" && ") : undefined,
-    sort: "-created",
-    expand: "from,to",
-  });
+      return pb.collection("transfers").getFullList<TransfersResponse>({
+        filter: filterParts.length > 0 ? filterParts.join(" && ") : undefined,
+        sort: "-created",
+        expand: "from,to",
+      });
+    },
+    60
+  );
 }
 
 /**
@@ -37,14 +47,14 @@ export async function getTransfersByBudget(
   pb: TypedPocketBase,
   budgetId: string,
   year?: number
-): Promise<Transfer[]> {
+): Promise<TransfersResponse[]> {
   return getTransfers(pb, { budgetId, year });
 }
 
 /**
  * Filter transfers by year (for client-side filtering)
  */
-export function filterTransfersByYear(transfers: Transfer[], year: number): Transfer[] {
+export function filterTransfersByYear(transfers: TransfersResponse[], year: number): TransfersResponse[] {
   const yearStart = `${year}-01-01`;
   const yearEnd = `${year}-12-31`;
   return transfers.filter((t) => {
@@ -57,7 +67,7 @@ export function filterTransfersByYear(transfers: Transfer[], year: number): Tran
  * Calculate transfers in/out for a budget
  */
 export function calculateTransferTotals(
-  transfers: Transfer[],
+  transfers: TransfersResponse[],
   budgetId: string
 ): { transfersIn: number; transfersOut: number } {
   return transfers.reduce(

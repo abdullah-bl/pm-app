@@ -56,7 +56,10 @@ const totalObligatedCost = yearObligations.reduce(
 	(sum, o) => sum + (o.cost || 0),
 	0,
 );
-const totalSpent = yearPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+// Only count payments with status "paid" as spent
+const totalSpent = yearPayments
+	.filter((p) => p.status === "paid")
+	.reduce((sum, p) => sum + (p.amount || 0), 0);
 const remaining = totalCash - totalObligatedCash;
 const remainingCost = totalCost - totalObligatedCost;
 
@@ -69,9 +72,9 @@ const getObligationsByBudget = (
 		.filter((o) => o.budget === budgetId)
 		.reduce((sum, o) => sum + (type === "cash" ? o.cash : o.cost || 0), 0);
 
-const getPaymentsByBudget = (budgetId: string) =>
+const getPaymentsByBudget = (obligationId: string) =>
 	yearPayments
-		.filter((p) => p.budget === budgetId)
+		.filter((p) => p.obligation === obligationId && p.status === "paid")
 		.reduce((sum, p) => sum + (p.amount || 0), 0);
 
 // Filter transfers for the year
@@ -98,7 +101,7 @@ const basePath = getLocalizedPath("/budget", lang);
 ---
 
 <Layout>
-	<div class="space-y-20 md:space-y-28">
+	<div class="space-y-24">
 		<!-- Header with Year Filter -->
 		<section>
 			<div class="flex items-center justify-between gap-4 flex-wrap">
@@ -109,13 +112,13 @@ const basePath = getLocalizedPath("/budget", lang);
 				<div class="flex items-center gap-3">
 					<label
 						for="year-filter"
-						class="text-sm text-muted-foreground"
+						class="text-base text-muted-foreground"
 					>
 						{t("filter.year")}
 					</label>
 					<select
 						id="year-filter"
-						class="border border-border rounded-md px-3 py-2 text-sm bg-background font-mono min-w-24"
+						class="border border-border rounded-md px-3 py-2 text-base bg-background font-mono min-w-24"
 					>
 						{
 							availableYears.map((year) => (
@@ -153,22 +156,22 @@ const basePath = getLocalizedPath("/budget", lang);
 
 				return (
 					<div class="border border-border rounded-lg p-8 md:p-10">
-						<div class="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16">
-							<div>
-								<span class="stat-label">{t("budget.total")}</span>
-								<p class="stat-number arshid">{formatCurrency(totalBudget, lang)}</p>
-							</div>
-							<div>
-								<span class="stat-label">{t("budget.totalObligated")}</span>
-								<p class="stat-number arshid">{formatCurrency(totalObligated, lang)}</p>
-							</div>
-							<div>
-								<span class="stat-label">{t("budget.totalRemaining")}</span>
-								<p class:list={["stat-number arshid", totalRemaining < 0 ? "text-destructive" : "text-emerald-600"]}>
-									{formatCurrency(totalRemaining, lang)}
-								</p>
-							</div>
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
+						<div class="min-w-0">
+							<span class="stat-label">{t("budget.total")}</span>
+							<p class="stat-number arshid">{formatCurrency(totalBudget, lang)}</p>
 						</div>
+						<div class="min-w-0">
+							<span class="stat-label">{t("budget.totalObligated")}</span>
+							<p class="stat-number arshid">{formatCurrency(totalObligated, lang)}</p>
+						</div>
+						<div class="min-w-0">
+							<span class="stat-label">{t("budget.totalRemaining")}</span>
+							<p class:list={["stat-number arshid", totalRemaining < 0 ? "text-destructive" : "text-emerald-600"]}>
+								{formatCurrency(totalRemaining, lang)}
+							</p>
+						</div>
+					</div>
 						
 						<!-- Utilization Progress Bar -->
 						<div class="mt-10 pt-8 border-t border-border">
@@ -218,15 +221,15 @@ const basePath = getLocalizedPath("/budget", lang);
 							
 							<div class="grid grid-cols-3 gap-6">
 								<div>
-									<span class="text-xs text-muted-foreground">{t("budget.total")}</span>
+									<span class="text-muted-foreground">{t("budget.total")}</span>
 									<p class="text-xl font-bold arshid mt-1">{formatCurrency(totalCash, lang)}</p>
 								</div>
 								<div>
-									<span class="text-xs text-muted-foreground">{t("budget.obligated")}</span>
+									<span class="text-muted-foreground">{t("budget.obligated")}</span>
 									<p class="text-xl arshid mt-1 text-muted-foreground">{formatCurrency(totalObligatedCash, lang)}</p>
 								</div>
 								<div>
-									<span class="text-xs text-muted-foreground">{t("budget.remaining")}</span>
+									<span class="text-muted-foreground">{t("budget.remaining")}</span>
 									<p class:list={["text-xl arshid mt-1 font-medium", remaining < 0 ? "text-destructive" : "text-emerald-600"]}>
 										{formatCurrency(remaining, lang)}
 									</p>
@@ -236,8 +239,8 @@ const basePath = getLocalizedPath("/budget", lang);
 							<!-- Mini Progress -->
 							<div class="mt-6 pt-4 border-t border-border">
 								<div class="flex items-center justify-between mb-2">
-									<span class="text-xs text-muted-foreground">{t("budget.utilization")}</span>
-									<span class="text-xs font-mono tabular-nums text-muted-foreground">{cashUtilization.toFixed(0)}%</span>
+									<span class="text-muted-foreground">{t("budget.utilization")}</span>
+									<span class="font-mono tabular-nums text-muted-foreground">{cashUtilization.toFixed(0)}%</span>
 								</div>
 								<div class="h-1.5 bg-muted rounded-full overflow-hidden">
 									<div 
@@ -248,8 +251,8 @@ const basePath = getLocalizedPath("/budget", lang);
 							</div>
 							<div class="mt-6 pt-4 border-border">
 								<div class="flex items-center justify-between mb-2">
-									<span class="text-xs text-muted-foreground">{t("common.spent")}</span>
-									<span class="text-xs font-mono tabular-nums text-muted-foreground">{formatCurrency(totalSpent, lang)} ({spendPercentOfCash.toFixed(0)}%)</span>
+									<span class="text-muted-foreground">{t("common.spent")}</span>
+									<span class="font-mono tabular-nums text-muted-foreground">{formatCurrency(totalSpent, lang)} ({spendPercentOfCash.toFixed(0)}%)</span>
 								</div>
 								<div class="h-1.5 bg-muted rounded-full overflow-hidden">
 									<div 
@@ -269,20 +272,20 @@ const basePath = getLocalizedPath("/budget", lang);
 						<div class="border border-border rounded-lg p-6 md:p-8">
 							<div class="flex items-center gap-2 mb-6">
 								<div class="w-3 h-3 rounded-full bg-muted-foreground"></div>
-								<span class="text-xs uppercase tracking-widest text-muted-foreground">{t("budget.cost")}</span>
+								<span class="uppercase tracking-widest text-muted-foreground">{t("budget.cost")}</span>
 							</div>
 							
 							<div class="grid grid-cols-3 gap-6">
 								<div>
-									<span class="text-xs text-muted-foreground">{t("budget.total")}</span>
+									<span class="text-muted-foreground">{t("budget.total")}</span>
 									<p class="text-xl font-bold arshid mt-1">{formatCurrency(totalCost, lang)}</p>
 								</div>
 								<div>
-									<span class="text-xs text-muted-foreground">{t("budget.obligated")}</span>
+									<span class="text-muted-foreground">{t("budget.obligated")}</span>
 									<p class="text-xl arshid mt-1 text-muted-foreground">{formatCurrency(totalObligatedCost, lang)}</p>
 								</div>
 								<div>
-									<span class="text-xs text-muted-foreground">{t("budget.remaining")}</span>
+									<span class="text-muted-foreground">{t("budget.remaining")}</span>
 									<p class:list={["text-xl arshid mt-1 font-medium", remainingCost < 0 ? "text-destructive" : "text-emerald-600"]}>
 										{formatCurrency(remainingCost, lang)}
 									</p>
@@ -292,8 +295,8 @@ const basePath = getLocalizedPath("/budget", lang);
 							<!-- Mini Progress -->
 							<div class="mt-6 pt-4 border-t border-border">
 								<div class="flex items-center justify-between mb-2">
-									<span class="text-xs text-muted-foreground">{t("budget.utilization")}</span>
-									<span class="text-xs font-mono tabular-nums text-muted-foreground">{costUtilization.toFixed(0)}%</span>
+									<span class="text-muted-foreground">{t("budget.utilization")}</span>
+									<span class="font-mono tabular-nums text-muted-foreground">{costUtilization.toFixed(0)}%</span>
 								</div>
 								<div class="h-1.5 bg-muted rounded-full overflow-hidden">
 									<div 
@@ -428,26 +431,26 @@ const basePath = getLocalizedPath("/budget", lang);
 											<div class="space-y-4">
 												<div class="flex items-center gap-2 pb-2 border-b border-border">
 													<div class="w-2.5 h-2.5 rounded-full bg-muted-foreground"></div>
-													<span class="text-xs font-medium uppercase tracking-widest">{t("budget.cost")}</span>
+													<span class="font-medium uppercase tracking-widest">{t("budget.cost")}</span>
 												</div>
 												
 												<div class="grid grid-cols-2 gap-4">
 													<div>
-														<p class="text-xs text-muted-foreground mb-1">{t("budget.total")}</p>
+														<p class="text-muted-foreground mb-1">{t("budget.total")}</p>
 														<p class="font-semibold arshid text-lg text-muted-foreground">{formatCurrency(item.cost || 0, lang)}</p>
 													</div>
 													<div>
-														<p class="text-xs text-muted-foreground mb-1">{t("budget.adjusted")}</p>
+														<p class="text-muted-foreground mb-1">{t("budget.adjusted")}</p>
 														<p class:list={["font-medium arshid text-muted-foreground", netTransferCost !== 0 ? (netTransferCost > 0 ? "text-emerald-600" : "text-amber-600") : ""]}>
 															{formatCurrency(adjustedCost, lang)}
 														</p>
 													</div>
 													<div>
-														<p class="text-xs text-muted-foreground mb-1">{t("budget.obligated")}</p>
+														<p class="text-muted-foreground mb-1">{t("budget.obligated")}</p>
 														<p class="arshid text-muted-foreground">{formatCurrency(obligatedCost, lang)}</p>
 													</div>
 													<div>
-														<p class="text-xs text-muted-foreground mb-1">{t("budget.remaining")}</p>
+														<p class="text-muted-foreground mb-1">{t("budget.remaining")}</p>
 														<p class:list={["font-medium arshid", availableCost < 0 ? "text-destructive" : "text-muted-foreground"]}>
 															{formatCurrency(availableCost, lang)}
 														</p>
@@ -570,8 +573,8 @@ const basePath = getLocalizedPath("/budget", lang);
 						<thead>
 							<tr>
 								<th>{t("table.ref")}</th>
-								<th>{t("budget.title")}</th>
-								<th>{t("budget.billProject")}</th>
+								<th>{t("payments.payment")}</th>
+								<th>{t("table.status")}</th>
 								<th>{t("table.date")}</th>
 								<th class="text-right">{t("table.amount")}</th>
 							</tr>
@@ -579,16 +582,31 @@ const basePath = getLocalizedPath("/budget", lang);
 						<tbody>
 							{yearPayments.map((payment) => (
 								<tr>
-									<td class="arshid text-muted-foreground text-sm align-middle">
+									<td class="arshid text-muted-foreground align-middle">
 										{payment.ref}
 									</td>
 									<td class="align-middle font-medium">
-										{payment.expand?.budget?.name || "—"}
-									</td>
-									<td class="align-middle text-muted-foreground">
-										{payment.expand?.bill?.name ||
+										{payment.name ||
 											payment.expand?.project?.name ||
 											"—"}
+									</td>
+									<td class="align-middle">
+										<span
+											class:list={[
+												"badge text-xs",
+												payment.status === "paid"
+													? "badge-success"
+													: payment.status === "pending"
+														? "badge-info"
+														: "badge-warning",
+											]}
+										>
+											{payment.status === "paid"
+												? t("payments.paid")
+												: payment.status === "pending"
+													? t("payments.pending")
+													: t("payments.planned")}
+										</span>
 									</td>
 									<td class="text-muted-foreground align-middle">
 										{formatDateFull(payment.created, lang)}
@@ -644,7 +662,7 @@ const basePath = getLocalizedPath("/budget", lang);
 									<td class="text-muted-foreground align-middle">
 										{formatDateFull(transfer.created, lang)}
 									</td>
-									<td class="text-muted-foreground text-sm max-w-xs truncate align-middle">
+									<td class="text-muted-foreground max-w-xs truncate align-middle">
 										{transfer.note || "—"}
 									</td>
 									<td class="text-right font-medium arshid text-base align-middle">
@@ -684,7 +702,7 @@ const basePath = getLocalizedPath("/budget", lang);
 							<tr>
 								<th>{t("table.ref")}</th>
 								<th>{t("budget.title")}</th>
-								<th>{t("budget.projectBill")}</th>
+								<th>{t("table.project")}</th>
 								<th>{t("table.date")}</th>
 								<th class="text-right">{t("budget.cash")}</th>
 								<th class="text-right">{t("budget.cost")}</th>
@@ -693,16 +711,14 @@ const basePath = getLocalizedPath("/budget", lang);
 						<tbody>
 							{yearObligations.map((obligation) => (
 								<tr>
-									<td class="mono text-muted-foreground text-sm align-middle">
+									<td class="mono text-muted-foreground align-middle">
 										{obligation.ref}
 									</td>
 									<td class="align-middle font-medium">
 										{obligation.expand?.budget?.name || "—"}
 									</td>
 									<td class="align-middle text-muted-foreground">
-										{obligation.expand?.project?.name ||
-											obligation.expand?.bill?.name ||
-											"—"}
+										{obligation.expand?.project?.name || "—"}
 									</td>
 									<td class="text-muted-foreground align-middle">
 										{formatDateFull(

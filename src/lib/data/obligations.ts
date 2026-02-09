@@ -1,9 +1,9 @@
-import type { TypedPocketBase, Obligation } from "@/types";
+import type { TypedPocketBase, ObligationsResponse } from "@/pocketbase-types";
+import { cache, cacheKey } from "@/lib/cache";
 
 export interface ObligationFilters {
   budgetId?: string;
   projectId?: string;
-  billId?: string;
   year?: number;
 }
 
@@ -13,29 +13,39 @@ export interface ObligationFilters {
 export async function getObligations(
   pb: TypedPocketBase,
   filters?: ObligationFilters
-): Promise<Obligation[]> {
-  const filterParts: string[] = [];
+): Promise<ObligationsResponse[]> {
+  const filterKey = filters
+    ? [
+        filters.budgetId ?? "",
+        filters.projectId ?? "",
+        filters.year ?? "",
+      ].join(":")
+    : "all";
+  return cache.getOrFetch(
+    cacheKey(pb, "obligations", filterKey),
+    () => {
+      const filterParts: string[] = [];
 
-  if (filters?.budgetId) {
-    filterParts.push(`budget = "${filters.budgetId}"`);
-  }
-  if (filters?.projectId) {
-    filterParts.push(`project = "${filters.projectId}"`);
-  }
-  if (filters?.billId) {
-    filterParts.push(`bill = "${filters.billId}"`);
-  }
-  if (filters?.year) {
-    const yearStart = `${filters.year}-01-01`;
-    const yearEnd = `${filters.year}-12-31`;
-    filterParts.push(`(date >= "${yearStart}" && date <= "${yearEnd}")`);
-  }
+      if (filters?.budgetId) {
+        filterParts.push(`budget = "${filters.budgetId}"`);
+      }
+      if (filters?.projectId) {
+        filterParts.push(`project = "${filters.projectId}"`);
+      }
+      if (filters?.year) {
+        const yearStart = `${filters.year}-01-01`;
+        const yearEnd = `${filters.year}-12-31`;
+        filterParts.push(`(date >= "${yearStart}" && date <= "${yearEnd}")`);
+      }
 
-  return pb.collection("obligations").getFullList<Obligation>({
-    filter: filterParts.length > 0 ? filterParts.join(" && ") : undefined,
-    sort: "-date",
-    expand: "budget,project,bill",
-  });
+      return pb.collection("obligations").getFullList<ObligationsResponse>({
+        filter: filterParts.length > 0 ? filterParts.join(" && ") : undefined,
+        sort: "-date",
+        expand: "budget,project",
+      });
+    },
+    60
+  );
 }
 
 /**
@@ -45,7 +55,7 @@ export async function getObligationsByBudget(
   pb: TypedPocketBase,
   budgetId: string,
   year?: number
-): Promise<Obligation[]> {
+): Promise<ObligationsResponse[]> {
   return getObligations(pb, { budgetId, year });
 }
 
@@ -55,27 +65,17 @@ export async function getObligationsByBudget(
 export async function getObligationsByProject(
   pb: TypedPocketBase,
   projectId: string
-): Promise<Obligation[]> {
+): Promise<ObligationsResponse[]> {
   return getObligations(pb, { projectId });
-}
-
-/**
- * Get obligations by bill ID
- */
-export async function getObligationsByBill(
-  pb: TypedPocketBase,
-  billId: string
-): Promise<Obligation[]> {
-  return getObligations(pb, { billId });
 }
 
 /**
  * Filter obligations by year (for client-side filtering)
  */
 export function filterObligationsByYear(
-  obligations: Obligation[],
+  obligations: ObligationsResponse[],
   year: number
-): Obligation[] {
+): ObligationsResponse[] {
   const yearStart = `${year}-01-01`;
   const yearEnd = `${year}-12-31`;
   return obligations.filter((o) => {
@@ -87,7 +87,7 @@ export function filterObligationsByYear(
 /**
  * Calculate total obligated amounts
  */
-export function calculateObligationTotals(obligations: Obligation[]): {
+export function calculateObligationTotals(obligations: ObligationsResponse[]): {
   totalCash: number;
   totalCost: number;
 } {

@@ -1,6 +1,6 @@
 /// <reference types="astro/client" />
 
-import type { TypedPocketBase } from "./types";
+import type { TypedPocketBase } from "./pocketbase-types";
 
 declare global {
     namespace App {

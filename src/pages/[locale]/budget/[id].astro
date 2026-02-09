@@ -43,7 +43,10 @@ const totalObligatedCost = obligations.reduce(
 	(sum, o) => sum + (o.cost || 0),
 	0,
 );
-const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+// Only count payments with status "paid" as spent
+const totalPaid = payments
+	.filter((p) => p.status === "paid")
+	.reduce((sum, p) => sum + (p.amount || 0), 0);
 
 const remainingCash = (budgetItem?.cash || 0) - totalObligatedCash;
 const remainingCost = (budgetItem?.cost || 0) - totalObligatedCost;
@@ -68,13 +71,13 @@ const backPath = getLocalizedPath("/budget", lang);
 				</p>
 				<a
 					href={backPath}
-					class="text-sm text-muted-foreground hover:text-foreground mt-4 inline-block"
+					class="text-base text-muted-foreground hover:text-foreground mt-4 inline-block"
 				>
 					← {t("detail.backToBudget")}
 				</a>
 			</div>
 		) : (
-			<div class="space-y-20 md:space-y-28">
+			<div class="space-y-24">
 				{/* Header */}
 				<PageHeader
 					title={budget.name}
@@ -85,7 +88,7 @@ const backPath = getLocalizedPath("/budget", lang);
 					<div class="flex items-center gap-4 mt-4">
 						<span class="badge badge-info">{selectedYear}</span>
 						{budget.description && (
-							<span class="text-muted-foreground text-sm">
+							<span class="text-muted-foreground">
 								{budget.description}
 							</span>
 						)}
@@ -206,7 +209,7 @@ const backPath = getLocalizedPath("/budget", lang);
 							<thead>
 								<tr>
 									<th>{t("table.ref")}</th>
-									<th>{t("budget.title")}</th>
+									<th>{t("table.project")}</th>
 									<th>{t("table.date")}</th>
 									<th class="text-right">
 										{t("budget.cash")}
@@ -219,14 +222,11 @@ const backPath = getLocalizedPath("/budget", lang);
 							<tbody>
 								{obligations.map((obligation) => (
 									<tr>
-										<td class="mono text-muted-foreground text-sm align-middle">
+										<td class="mono text-muted-foreground align-middle">
 											{obligation.ref}
 										</td>
 										<td class="align-middle font-medium">
-											{/* it should be (project, bill) name */}
-											{obligation.expand?.project?.name ||
-												obligation.expand?.bill?.name ||
-												"—"}
+											{obligation.expand?.project?.name || "—"}
 										</td>
 										<td class="text-muted-foreground align-middle">
 											{formatDateFull(
@@ -265,7 +265,8 @@ const backPath = getLocalizedPath("/budget", lang);
 							<thead>
 								<tr>
 									<th>{t("table.ref")}</th>
-									<th>{t("budget.projectBill")}</th>
+									<th>{t("payments.payment")}</th>
+									<th>{t("table.status")}</th>
 									<th>{t("table.date")}</th>
 									<th class="text-right">
 										{t("table.amount")}
@@ -275,13 +276,31 @@ const backPath = getLocalizedPath("/budget", lang);
 							<tbody>
 								{payments.map((payment) => (
 									<tr>
-										<td class="arshid text-muted-foreground text-sm align-middle">
+										<td class="arshid text-muted-foreground align-middle">
 											{payment.ref}
 										</td>
 										<td class="align-middle font-medium">
-											{payment.expand?.project?.name ||
-												payment.expand?.bill?.name ||
+											{payment.name ||
+												payment.expand?.project?.name ||
 												"—"}
+										</td>
+										<td class="align-middle">
+											<span
+												class:list={[
+													"badge text-xs",
+													payment.status === "paid"
+														? "badge-success"
+														: payment.status === "pending"
+															? "badge-info"
+															: "badge-warning",
+												]}
+											>
+												{payment.status === "paid"
+													? t("payments.paid")
+													: payment.status === "pending"
+														? t("payments.pending")
+														: t("payments.planned")}
+											</span>
 										</td>
 										<td class="text-muted-foreground align-middle">
 											{formatDateFull(
@@ -358,7 +377,7 @@ const backPath = getLocalizedPath("/budget", lang);
 													lang,
 												)}
 											</td>
-											<td class="text-muted-foreground text-sm max-w-xs truncate align-middle">
+											<td class="text-muted-foreground max-w-xs truncate align-middle">
 												{transfer.note || "—"}
 											</td>
 											<td

@@ -17,28 +17,38 @@ const currentYear = new Date().getFullYear();
 
 const {
 	projects,
-	upcomingBills,
+	plannedPayments,
 	yearObligations,
 	yearPayments,
 	totalBudgetCash,
-	totalBudgetCost,
 	totalObligatedCash,
-	totalObligatedCost,
 	totalPaid,
-	totalBills,
 	totalProjectValue,
 	budgetRemainingCash,
-	budgetRemainingCost,
 } = await getDashboardData(pb, currentYear);
 
 const recentProjects = projects.slice(0, 5);
+
+// Payments breakdown by status for the current year
+const paidPayments = yearPayments.filter((p) => p.status === "paid");
+const pendingPayments = yearPayments.filter((p) => p.status === "pending");
+const plannedYearPayments = yearPayments.filter((p) => p.status === "planned");
+
+const totalPending = pendingPayments.reduce(
+	(sum, p) => sum + (p.amount || 0),
+	0,
+);
+const totalPlannedYear = plannedYearPayments.reduce(
+	(sum, p) => sum + (p.amount || 0),
+	0,
+);
 ---
 
 <Layout>
-	<div class="space-y-20 md:space-y-28">
+	<div class="space-y-24">
 		<!-- Header -->
 		<section>
-			<p class="section-title mb-3">
+			<p class="section-title mb-4">
 				{currentYear}
 				{t("dashboard.overview")}
 			</p>
@@ -49,21 +59,18 @@ const recentProjects = projects.slice(0, 5);
 		<section>
 			<h2 class="section-title">{t("dashboard.budgetSummary")}</h2>
 			<div class="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
-				<!-- Cash Budget -->
 				<div>
 					<span class="stat-label">{t("budget.cash")}</span>
 					<p class="stat-number arshid">
 						{formatCurrency(totalBudgetCash, lang)}
 					</p>
 				</div>
-				<!-- Obligated -->
 				<div>
 					<span class="stat-label">{t("budget.obligatedCash")}</span>
 					<p class="stat-number arshid">
 						{formatCurrency(totalObligatedCash, lang)}
 					</p>
 				</div>
-				<!-- Remaining -->
 				<div>
 					<span class="stat-label">{t("budget.remainingCash")}</span>
 					<p
@@ -78,44 +85,60 @@ const recentProjects = projects.slice(0, 5);
 					</p>
 				</div>
 			</div>
-
-			<!-- Cost Budget - Secondary Stats will be hidden in the future -->
-			<!-- <div
-				class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-16 mt-12 pt-8 border-t border-border"
-			>
-				<div>
-					<span class="stat-label">{t("budget.cost")}</span>
-					<p class="stat-number-md arshid">
-						{formatCurrency(totalBudgetCost, lang)}
-					</p>
-				</div>
-				<div>
-					<span class="stat-label">{t("budget.obligatedCost")}</span>
-					<p class="stat-number-md arshid">
-						{formatCurrency(totalObligatedCost, lang)}
-					</p>
-				</div>
-				<div>
-					<span class="stat-label">{t("budget.remainingCost")}</span>
-					<p class="stat-number-md arshid">
-						{formatCurrency(budgetRemainingCost, lang)}
-					</p>
-				</div>
-			</div> -->
 		</section>
 
-		<!-- Activity Stats -->
+		<!-- Payments Overview - Planned / Pending / Paid -->
 		<section>
-			<h2 class="section-title">{t("dashboard.activity")}</h2>
-			<div class="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-16">
-				<div>
-					<span class="stat-label">{t("budget.payments")}</span>
+			<h2 class="section-title">{t("dashboard.paymentsOverview")}</h2>
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
+				<!-- Planned -->
+				<div class="border-s-4 border-blue-400 ps-6">
+					<span class="stat-label">{t("payments.planned")}</span>
+					<p class="stat-number-md arshid">
+						{formatCurrency(totalPlannedYear, lang)}
+					</p>
+					<p class="text-muted-foreground mt-3">
+						{plannedYearPayments.length}
+						{t("budget.transactions")}
+					</p>
+				</div>
+				<!-- Pending -->
+				<div class="border-s-4 border-amber-400 ps-6">
+					<span class="stat-label">{t("payments.pending")}</span>
+					<p class="stat-number-md arshid">
+						{formatCurrency(totalPending, lang)}
+					</p>
+					<p class="text-muted-foreground mt-3">
+						{pendingPayments.length}
+						{t("budget.transactions")}
+					</p>
+				</div>
+				<!-- Paid -->
+				<div class="border-s-4 border-emerald-400 ps-6">
+					<span class="stat-label">{t("payments.paid")}</span>
 					<p class="stat-number-md arshid">
 						{formatCurrency(totalPaid, lang)}
 					</p>
-					<p class="text-sm text-muted-foreground mt-2">
-						{yearPayments.length}
+					<p class="text-muted-foreground mt-3">
+						{paidPayments.length}
 						{t("budget.transactions")}
+					</p>
+				</div>
+			</div>
+		</section>
+
+		<!-- Projects & Obligations Summary -->
+		<section>
+			<h2 class="section-title">{t("dashboard.activity")}</h2>
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16">
+				<div>
+					<span class="stat-label"
+						>{t("dashboard.activeProjects")}</span
+					>
+					<p class="stat-number-md">{projects.length}</p>
+					<p class="text-muted-foreground arshid mt-3">
+						{formatCurrency(totalProjectValue, lang)}
+						{t("budget.value")}
 					</p>
 				</div>
 				<div>
@@ -123,52 +146,30 @@ const recentProjects = projects.slice(0, 5);
 					<p class="stat-number-md arshid">
 						{yearObligations.length}
 					</p>
-					<p class="text-sm text-muted-foreground mt-2">
+					<p class="text-muted-foreground mt-3">
 						{t("budget.commitments")}
-					</p>
-				</div>
-				<div>
-					<span class="stat-label"
-						>{t("dashboard.upcomingBills")}</span
-					>
-					<p class="stat-number-md arshid">
-						{formatCurrency(totalBills, lang)}
-					</p>
-					<p class="text-sm text-muted-foreground mt-2">
-						{upcomingBills.length}
-						{t("budget.pending")}
-					</p>
-				</div>
-				<div>
-					<span class="stat-label"
-						>{t("dashboard.activeProjects")}</span
-					>
-					<p class="stat-number-md">{projects.length}</p>
-					<p class="text-sm text-muted-foreground arshid mt-2">
-						{formatCurrency(totalProjectValue, lang)}
-						{t("budget.value")}
 					</p>
 				</div>
 			</div>
 		</section>
 
-		<!-- Recent Projects -->
+		<!-- Active Projects Table -->
 		<section>
-			<div class="flex items-center justify-between mb-6">
+			<div class="flex items-center justify-between mb-8">
 				<h2 class="section-title mb-0!">
 					{t("dashboard.activeProjects")}
 				</h2>
 				<a
 					href={getLocalizedPath("/projects?active=true", lang)}
-					class="text-sm text-muted-foreground hover:text-foreground transition-colors"
+					class="text-base text-muted-foreground hover:text-foreground transition-colors"
 				>
-					{t("dashboard.viewAll")} →
+					{t("dashboard.viewAll")} &rarr;
 				</a>
 			</div>
 
 			{
 				recentProjects.length === 0 ? (
-					<p class="text-muted-foreground py-12 text-center">
+					<p class="text-muted-foreground py-16 text-center text-lg">
 						{t("dashboard.noActiveProjects")}
 					</p>
 				) : (
@@ -187,10 +188,10 @@ const recentProjects = projects.slice(0, 5);
 									onclick={`window.location.href='${getLocalizedPath(`/projects/${project.id}`, lang)}'`}
 								>
 									<td>
-										<p class="font-medium text-base leading-snug">
+										<p class="font-medium text-lg leading-snug">
 											{project.name}
 										</p>
-										<p class="text-sm text-muted-foreground mono mt-1">
+										<p class="text-muted-foreground mono mt-1">
 											{project.slug || project.ref}
 										</p>
 									</td>
@@ -208,7 +209,7 @@ const recentProjects = projects.slice(0, 5);
 											</span>
 										)}
 									</td>
-									<td class="text-right font-medium arshid text-base align-middle">
+									<td class="text-right font-medium arshid text-lg align-middle">
 										{formatCurrency(
 											project.total || 0,
 											lang,
@@ -222,57 +223,55 @@ const recentProjects = projects.slice(0, 5);
 			}
 		</section>
 
-		<!-- Upcoming Bills -->
+		<!-- Planned Payments Table -->
 		<section>
-			<div class="flex items-center justify-between mb-6">
+			<div class="flex items-center justify-between mb-8">
 				<h2 class="section-title mb-0!">
-					{t("dashboard.upcomingBills")}
+					{t("dashboard.plannedPayments")}
 				</h2>
 				<a
-					href={getLocalizedPath("/bills", lang)}
-					class="text-sm text-muted-foreground hover:text-foreground transition-colors"
+					href={getLocalizedPath("/payments?status=planned", lang)}
+					class="text-base text-muted-foreground hover:text-foreground transition-colors"
 				>
-					{t("dashboard.viewAll")} →
+					{t("dashboard.viewAll")} &rarr;
 				</a>
 			</div>
 
 			{
-				upcomingBills.length === 0 ? (
-					<p class="text-muted-foreground py-12 text-center">
-						{t("dashboard.noUpcomingBills")}
+				plannedPayments.length === 0 ? (
+					<p class="text-muted-foreground py-16 text-center text-lg">
+						{t("dashboard.noPlannedPayments")}
 					</p>
 				) : (
 					<table class="data-table">
 						<thead>
 							<tr>
-								<th>{t("table.bill")}</th>
+								<th>{t("payments.payment")}</th>
 								<th>{t("table.due")}</th>
 								<th class="text-right">{t("table.amount")}</th>
 							</tr>
 						</thead>
 						<tbody>
-							{upcomingBills.slice(0, 5).map((bill) => (
+							{plannedPayments.slice(0, 5).map((payment) => (
 								<tr
 									class="clickable"
-									onclick={`window.location.href='${getLocalizedPath(`/bills/${bill.id}`, lang)}'`}
+									onclick={`window.location.href='${getLocalizedPath(`/payments/${payment.id}`, lang)}'`}
 								>
 									<td>
-										<p class="font-medium text-base">
-											{bill.name}
+										<p class="font-medium text-lg">
+											{payment.name}
 										</p>
-										{bill.note && (
-											<p class="text-sm text-muted-foreground line-clamp-1 mt-1">
-												{bill.note}
-											</p>
-										)}
 									</td>
 									<td class="text-muted-foreground align-middle">
-										{bill.due_date
-											? formatDate(bill.due_date, lang)
+										{payment.due_date
+											? formatDate(payment.due_date, lang)
 											: "—"}
 									</td>
-									<td class="text-right font-medium arshid text-base align-middle">
-										{formatCurrency(bill.amount || 0, lang)}
+									<td class="text-right font-medium arshid text-lg align-middle">
+										{formatCurrency(
+											payment.amount || 0,
+											lang,
+										)}
 									</td>
 								</tr>
 							))}
@@ -282,23 +281,23 @@ const recentProjects = projects.slice(0, 5);
 			}
 		</section>
 
-		<!-- Recent Payments -->
+		<!-- Recent Paid Payments Table -->
 		<section>
-			<div class="flex items-center justify-between mb-6">
+			<div class="flex items-center justify-between mb-8">
 				<h2 class="section-title mb-0!">
 					{t("dashboard.recentPayments")}
 				</h2>
 				<a
-					href={getLocalizedPath("/budget", lang)}
-					class="text-sm text-muted-foreground hover:text-foreground transition-colors"
+					href={getLocalizedPath("/payments?status=paid", lang)}
+					class="text-base text-muted-foreground hover:text-foreground transition-colors"
 				>
-					{t("dashboard.viewAll")} →
+					{t("dashboard.viewAll")} &rarr;
 				</a>
 			</div>
 
 			{
-				yearPayments.length === 0 ? (
-					<p class="text-muted-foreground py-12 text-center">
+				paidPayments.length === 0 ? (
+					<p class="text-muted-foreground py-16 text-center text-lg">
 						{t("dashboard.noPaymentsThisYear")}
 					</p>
 				) : (
@@ -311,15 +310,18 @@ const recentProjects = projects.slice(0, 5);
 							</tr>
 						</thead>
 						<tbody>
-							{yearPayments.slice(0, 5).map((payment) => (
-								<tr>
+							{paidPayments.slice(0, 5).map((payment) => (
+								<tr
+									class="clickable"
+									onclick={`window.location.href='${getLocalizedPath(`/payments/${payment.id}`, lang)}'`}
+								>
 									<td class="mono text-muted-foreground align-middle">
 										{payment.ref || "—"}
 									</td>
 									<td class="text-muted-foreground align-middle">
 										{formatDate(payment.created, lang)}
 									</td>
-									<td class="text-right font-medium arshid text-base align-middle">
+									<td class="text-right font-medium arshid text-lg align-middle">
 										{formatCurrency(
 											payment.amount || 0,
 											lang,

@@ -1,0 +1,112 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import PageHeader from "@/components/PageHeader.astro";
+import StatsGrid from "@/components/StatsGrid.astro";
+import StatItem from "@/components/StatItem.astro";
+import DetailSection from "@/components/DetailSection.astro";
+import EmptyState from "@/components/EmptyState.astro";
+import {
+	getLangFromUrl,
+	useTranslations,
+	getLocalizedPath,
+	formatCurrency,
+	formatDateFull,
+} from "@/i18n/utils";
+import { getPaymentById } from "@/lib/data";
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const pb = Astro.locals.pb;
+const { id } = Astro.params;
+
+const payment = await getPaymentById(pb, id!);
+
+// Check if overdue
+const now = new Date();
+const isOverdue = payment?.status === "planned" && payment?.due_date && new Date(payment.due_date) < now;
+
+const backPath = getLocalizedPath("/payments", lang);
+
+const statusLabel = payment?.status === "paid"
+	? t("payments.paid")
+	: payment?.status === "pending"
+		? t("payments.pending")
+		: t("payments.planned");
+---
+
+<Layout>
+	{
+		!payment ? (
+			<div class="py-20 text-center">
+				<p class="text-muted-foreground text-lg">
+					{t("detail.paymentNotFound")}
+				</p>
+				<a
+					href={backPath}
+					class="text-base text-muted-foreground hover:text-foreground mt-4 inline-block"
+				>
+					← {t("detail.backToPayments")}
+				</a>
+			</div>
+		) : (
+			<div class="space-y-24">
+				{/* Header */}
+				<PageHeader
+					title={payment.name}
+					subtitle={payment.ref}
+					backHref={backPath}
+					backLabel={t("detail.backToPayments")}
+				>
+					<div class="flex items-center gap-4 mt-3">
+						<span
+							class:list={[
+								"badge text-xs",
+								payment.status === "paid"
+									? "badge-success"
+									: payment.status === "pending"
+										? "badge-info"
+										: "badge-warning",
+							]}
+						>
+							{statusLabel}
+						</span>
+						{payment.expand?.project && (
+							<p class="text-muted-foreground">
+								{t("table.project")}: {payment.expand.project.name}
+							</p>
+						)}
+					</div>
+				</PageHeader>
+
+				{/* Payment Overview */}
+				<DetailSection title={t("detail.overview")}>
+					<StatsGrid columns={3}>
+						<StatItem
+							label={t("table.amount")}
+							value={formatCurrency(payment.amount || 0, lang)}
+							size="lg"
+							mono
+						/>
+						<StatItem
+							label={t("table.due")}
+							value={
+								payment.due_date
+									? formatDateFull(payment.due_date, lang)
+									: t("common.tbd")
+							}
+							size="md"
+							variant={isOverdue ? "negative" : "default"}
+						/>
+						<StatItem
+							label={t("table.status")}
+							value={statusLabel}
+							size="md"
+							variant={payment.status === "paid" ? "positive" : "muted"}
+						/>
+					</StatsGrid>
+				</DetailSection>
+			</div>
+		)
+	}
+</Layout>
