@@ -1,5 +1,6 @@
 import type { TypedPocketBase, TransfersResponse } from "@/pocketbase-types";
 import { cache, cacheKey } from "@/lib/cache";
+import type { TransferWithExpand } from "./expand-types";
 
 export interface TransferFilters {
   budgetId?: string;
@@ -12,7 +13,7 @@ export interface TransferFilters {
 export async function getTransfers(
   pb: TypedPocketBase,
   filters?: TransferFilters
-): Promise<TransfersResponse[]> {
+): Promise<TransferWithExpand[]> {
   const filterKey = filters
     ? [filters.budgetId ?? "", filters.year ?? ""].join(":")
     : "all";
@@ -30,7 +31,7 @@ export async function getTransfers(
         filterParts.push(`(created >= "${yearStart}" && created <= "${yearEnd}")`);
       }
 
-      return pb.collection("transfers").getFullList<TransfersResponse>({
+      return pb.collection("transfers").getFullList<TransferWithExpand>({
         filter: filterParts.length > 0 ? filterParts.join(" && ") : undefined,
         sort: "-created",
         expand: "from,to",
@@ -47,7 +48,7 @@ export async function getTransfersByBudget(
   pb: TypedPocketBase,
   budgetId: string,
   year?: number
-): Promise<TransfersResponse[]> {
+): Promise<TransferWithExpand[]> {
   return getTransfers(pb, { budgetId, year });
 }
 

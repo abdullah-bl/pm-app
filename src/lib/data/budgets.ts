@@ -3,27 +3,31 @@ import type {
   BudgetsResponse,
   BudgetItemsResponse,
   ObligationsResponse,
-  PaymentsResponse,
-  TransfersResponse,
 } from "@/pocketbase-types";
 import { cache, cacheKey } from "@/lib/cache";
+import type {
+  BudgetItemWithBudgetExpand,
+  ObligationWithExpand,
+  PaymentWithExpand,
+  TransferWithExpand,
+} from "./expand-types";
 
 export interface BudgetWithDetails {
   budget: BudgetsResponse;
-  budgetItem: BudgetItemsResponse | null;
-  obligations: ObligationsResponse[];
-  payments: PaymentsResponse[];
-  transfers: TransfersResponse[];
+  budgetItem: BudgetItemWithBudgetExpand | null;
+  obligations: ObligationWithExpand[];
+  payments: PaymentWithExpand[];
+  transfers: TransferWithExpand[];
   availableYears: number[];
 }
 
 export interface BudgetOverviewData {
   budgets: BudgetsResponse[];
-  items: BudgetItemsResponse[];
-  allItems: BudgetItemsResponse[];
-  payments: PaymentsResponse[];
-  transfers: TransfersResponse[];
-  obligations: ObligationsResponse[];
+  items: BudgetItemWithBudgetExpand[];
+  allItems: BudgetItemWithBudgetExpand[];
+  payments: PaymentWithExpand[];
+  transfers: TransferWithExpand[];
+  obligations: ObligationWithExpand[];
   availableYears: number[];
 }
 
@@ -141,23 +145,24 @@ export async function getBudgetWithDetails(
       // Get all related data in parallel - these can fail gracefully
       const [budgetItemResult, allItems, obligations, payments, transfers] =
         await Promise.all([
-          pb.collection("budget_items").getList<BudgetItemsResponse>(1, 1, {
+          pb.collection("budget_items").getList<BudgetItemWithBudgetExpand>(1, 1, {
             filter: `budget = "${id}" && year = ${year}`,
             expand: "budget",
           }),
           pb.collection("budget_items").getFullList<BudgetItemsResponse>({
             filter: `budget = "${id}"`,
           }),
-          pb.collection("obligations").getFullList<ObligationsResponse>({
+          pb.collection("obligations").getFullList<ObligationWithExpand>({
             filter: `budget = "${id}"`,
             sort: "-date",
             expand: "project,budget",
           }),
-          pb.collection("payments").getFullList<PaymentsResponse>({
+          pb.collection("payments").getFullList<PaymentWithExpand>({
+            filter: `obligation.budget = "${id}"`,
             sort: "-created",
             expand: "project,obligation",
           }),
-          pb.collection("transfers").getFullList<TransfersResponse>({
+          pb.collection("transfers").getFullList<TransferWithExpand>({
             filter: `(from = "${id}" || to = "${id}")`,
             sort: "-created",
             expand: "from,to",
@@ -207,19 +212,19 @@ export async function getBudgetOverview(
     async () => {
       const [budgets, allItems, payments, transfers, obligations] = await Promise.all([
         pb.collection("budgets").getFullList<BudgetsResponse>(),
-        pb.collection("budget_items").getFullList<BudgetItemsResponse>({
+        pb.collection("budget_items").getFullList<BudgetItemWithBudgetExpand>({
           sort: "budget.ref",
           expand: "budget",
         }),
-        pb.collection("payments").getFullList<PaymentsResponse>({
+        pb.collection("payments").getFullList<PaymentWithExpand>({
           sort: "-created",
           expand: "project,obligation",
         }),
-        pb.collection("transfers").getFullList<TransfersResponse>({
+        pb.collection("transfers").getFullList<TransferWithExpand>({
           sort: "-created",
           expand: "from,to",
         }),
-        pb.collection("obligations").getFullList<ObligationsResponse>({
+        pb.collection("obligations").getFullList<ObligationWithExpand>({
           sort: "-created",
           expand: "budget,project",
         }),
@@ -281,13 +286,18 @@ export function getObligationsByBudgetId(
 }
 
 /**
- * Get payments total by budget ID from a list of payments (only status = "paid")
+ * Get payments total by budget ID from a list of payments (only status = "paid").
+ * Requires obligations list to map payments to budgets via obligation.budget.
  */
 export function getPaymentsByBudgetId(
-  payments: PaymentsResponse[],
+  payments: PaymentWithExpand[],
+  obligations: ObligationWithExpand[],
   budgetId: string
 ): number {
+  const obligationIds = new Set(
+    obligations.filter((o) => o.budget === budgetId).map((o) => o.id)
+  );
   return payments
-    .filter((p) => p.status === "paid")
+    .filter((p) => p.obligation && obligationIds.has(p.obligation) && p.status === "paid")
     .reduce((sum, p) => sum + (p.amount || 0), 0);
 }

@@ -1,5 +1,6 @@
 import type { TypedPocketBase, ObligationsResponse } from "@/pocketbase-types";
 import { cache, cacheKey } from "@/lib/cache";
+import type { ObligationWithExpand } from "./expand-types";
 
 export interface ObligationFilters {
   budgetId?: string;
@@ -13,7 +14,7 @@ export interface ObligationFilters {
 export async function getObligations(
   pb: TypedPocketBase,
   filters?: ObligationFilters
-): Promise<ObligationsResponse[]> {
+): Promise<ObligationWithExpand[]> {
   const filterKey = filters
     ? [
         filters.budgetId ?? "",
@@ -38,7 +39,7 @@ export async function getObligations(
         filterParts.push(`(date >= "${yearStart}" && date <= "${yearEnd}")`);
       }
 
-      return pb.collection("obligations").getFullList<ObligationsResponse>({
+      return pb.collection("obligations").getFullList<ObligationWithExpand>({
         filter: filterParts.length > 0 ? filterParts.join(" && ") : undefined,
         sort: "-date",
         expand: "budget,project",
@@ -55,7 +56,7 @@ export async function getObligationsByBudget(
   pb: TypedPocketBase,
   budgetId: string,
   year?: number
-): Promise<ObligationsResponse[]> {
+): Promise<ObligationWithExpand[]> {
   return getObligations(pb, { budgetId, year });
 }
 
@@ -65,7 +66,7 @@ export async function getObligationsByBudget(
 export async function getObligationsByProject(
   pb: TypedPocketBase,
   projectId: string
-): Promise<ObligationsResponse[]> {
+): Promise<ObligationWithExpand[]> {
   return getObligations(pb, { projectId });
 }
 

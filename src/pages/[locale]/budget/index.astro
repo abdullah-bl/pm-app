@@ -72,10 +72,24 @@ const getObligationsByBudget = (
 		.filter((o) => o.budget === budgetId)
 		.reduce((sum, o) => sum + (type === "cash" ? o.cash : o.cost || 0), 0);
 
-const getPaymentsByBudget = (obligationId: string) =>
-	yearPayments
-		.filter((p) => p.obligation === obligationId && p.status === "paid")
+// Build obligation-to-budget mapping for payment filtering
+const obligationIdsByBudget = new Map<string, Set<string>>();
+obligations.forEach((o) => {
+	if (o.budget) {
+		if (!obligationIdsByBudget.has(o.budget)) {
+			obligationIdsByBudget.set(o.budget, new Set());
+		}
+		obligationIdsByBudget.get(o.budget)!.add(o.id);
+	}
+});
+
+const getPaymentsByBudget = (budgetId: string) => {
+	const oblIds = obligationIdsByBudget.get(budgetId);
+	if (!oblIds) return 0;
+	return yearPayments
+		.filter((p) => p.obligation && oblIds.has(p.obligation) && p.status === "paid")
 		.reduce((sum, p) => sum + (p.amount || 0), 0);
+};
 
 // Filter transfers for the year
 const yearTransfers = transfers.filter((t) => {
@@ -323,7 +337,7 @@ const basePath = getLocalizedPath("/budget", lang);
 				) : (
 					<div class="grid gap-8">
 						{items.map((item) => {
-							const budgetId = (item as any).budget;
+							const budgetId = item.budget;
 							const obligatedCash = getObligationsByBudget(budgetId, "cash");
 							const obligatedCost = getObligationsByBudget(budgetId, "cost");
 							const paid = getPaymentsByBudget(budgetId);

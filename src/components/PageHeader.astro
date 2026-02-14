@@ -34,7 +34,15 @@ const { title, subtitle, backHref, backLabel } = Astro.props;
 			</a>
 		)
 	}
-	<h1 class="page-title">{title}</h1>
-	{subtitle && <p class="page-subtitle">{subtitle}</p>}
+	<h1 class="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
+		{title}
+	</h1>
+	{
+		subtitle && (
+			<p class="page-subtitle text-lg text-muted-foreground mt-3">
+				{subtitle}
+			</p>
+		)
+	}
 	<slot />
 </section>

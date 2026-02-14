@@ -1,20 +1,22 @@
 import type {
   TypedPocketBase,
-  ProjectsResponse,
   BudgetItemsResponse,
-  ObligationsResponse,
-  PaymentsResponse,
 } from "@/pocketbase-types";
 import { cache, cacheKey } from "@/lib/cache";
+import type {
+  ObligationWithExpand,
+  PaymentWithExpand,
+  ProjectWithExpand,
+} from "./expand-types";
 
 export interface DashboardData {
-  projects: ProjectsResponse[];
+  projects: ProjectWithExpand[];
   budgetItems: BudgetItemsResponse[];
-  obligations: ObligationsResponse[];
-  payments: PaymentsResponse[];
-  plannedPayments: PaymentsResponse[];
-  yearObligations: ObligationsResponse[];
-  yearPayments: PaymentsResponse[];
+  obligations: ObligationWithExpand[];
+  payments: PaymentWithExpand[];
+  plannedPayments: PaymentWithExpand[];
+  yearObligations: ObligationWithExpand[];
+  yearPayments: PaymentWithExpand[];
   // Calculated values
   totalBudgetCash: number;
   totalBudgetCost: number;
@@ -41,18 +43,19 @@ export async function getDashboardData(
       const yearEnd = `${year}-12-31`;
 
       const [projects, budgetItems, obligations, payments] = await Promise.all([
-        pb.collection("projects").getFullList<ProjectsResponse>({
+        pb.collection("projects").getFullList<ProjectWithExpand>({
           sort: "-created",
           filter: "active=true",
-          expand: "phase",
+          expand: "phase,assignee",
         }),
         pb.collection("budget_items").getFullList<BudgetItemsResponse>({
           filter: `year=${year}`,
         }),
-        pb.collection("obligations").getFullList<ObligationsResponse>({
+        pb.collection("obligations").getFullList<ObligationWithExpand>({
           sort: "-date",
+          expand: "budget,project",
         }),
-        pb.collection("payments").getFullList<PaymentsResponse>({
+        pb.collection("payments").getFullList<PaymentWithExpand>({
           sort: "-created",
           expand: "project,obligation",
         }),

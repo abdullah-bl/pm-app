@@ -1,5 +1,6 @@
 import type { TypedPocketBase, PaymentsResponse, PaymentsStatusOptions } from "@/pocketbase-types";
 import { cache, cacheKey } from "@/lib/cache";
+import type { PaymentWithExpand } from "./expand-types";
 
 export interface PaymentFilters {
   projectId?: string;
@@ -14,7 +15,7 @@ export interface PaymentFilters {
 export async function getPayments(
   pb: TypedPocketBase,
   filters?: PaymentFilters
-): Promise<PaymentsResponse[]> {
+): Promise<PaymentWithExpand[]> {
   const filterKey = filters
     ? [
         filters.projectId ?? "",
@@ -43,7 +44,7 @@ export async function getPayments(
         filterParts.push(`(created >= "${yearStart}" && created <= "${yearEnd}")`);
       }
 
-      return pb.collection("payments").getFullList<PaymentsResponse>({
+      return pb.collection("payments").getFullList<PaymentWithExpand>({
         filter: filterParts.length > 0 ? filterParts.join(" && ") : undefined,
         sort: "-created",
         expand: "project,obligation",
@@ -59,12 +60,12 @@ export async function getPayments(
 export async function getPaymentById(
   pb: TypedPocketBase,
   id: string
-): Promise<PaymentsResponse | null> {
+): Promise<PaymentWithExpand | null> {
   return cache.getOrFetch(
     cacheKey(pb, "payment", id),
     async () => {
       try {
-        return await pb.collection("payments").getOne<PaymentsResponse>(id, {
+        return await pb.collection("payments").getOne<PaymentWithExpand>(id, {
           expand: "project,obligation",
         });
       } catch {
@@ -81,7 +82,7 @@ export async function getPaymentById(
 export async function getPaymentsByProject(
   pb: TypedPocketBase,
   projectId: string
-): Promise<PaymentsResponse[]> {
+): Promise<PaymentWithExpand[]> {
   return getPayments(pb, { projectId });
 }
 
@@ -91,7 +92,7 @@ export async function getPaymentsByProject(
 export async function getPaymentsByStatus(
   pb: TypedPocketBase,
   status: PaymentsStatusOptions
-): Promise<PaymentsResponse[]> {
+): Promise<PaymentWithExpand[]> {
   return getPayments(pb, { status });
 }
 
@@ -101,11 +102,11 @@ export async function getPaymentsByStatus(
 export async function getUpcomingPayments(
   pb: TypedPocketBase,
   limit?: number
-): Promise<PaymentsResponse[]> {
+): Promise<PaymentWithExpand[]> {
   return cache.getOrFetch(
     cacheKey(pb, "payments", "upcoming", String(limit ?? "all")),
     async () => {
-      const allPayments = await pb.collection("payments").getFullList<PaymentsResponse>({
+      const allPayments = await pb.collection("payments").getFullList<PaymentWithExpand>({
         filter: `status = "planned"`,
         sort: "due_date",
         expand: "project,obligation",
@@ -125,11 +126,11 @@ export async function getUpcomingPayments(
  */
 export async function getOverduePayments(
   pb: TypedPocketBase
-): Promise<PaymentsResponse[]> {
+): Promise<PaymentWithExpand[]> {
   return cache.getOrFetch(
     cacheKey(pb, "payments", "overdue"),
     async () => {
-      const allPayments = await pb.collection("payments").getFullList<PaymentsResponse>({
+      const allPayments = await pb.collection("payments").getFullList<PaymentWithExpand>({
         filter: `status = "planned"`,
         sort: "due_date",
         expand: "project,obligation",

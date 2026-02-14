@@ -31,7 +31,7 @@ export interface ProjectWithDetails {
 export async function getProjects(
   pb: TypedPocketBase,
   filters?: ProjectFilters
-): Promise<{ projects: ProjectsResponse[]; phases: PhasesResponse[] }> {
+): Promise<{ projects: ProjectWithExpand[]; phases: PhasesResponse[] }> {
   const filterKey = filters
     ? [filters.phase ?? "", filters.active ?? "", filters.year ?? ""].join(":")
     : "all";
@@ -39,7 +39,7 @@ export async function getProjects(
     cacheKey(pb, "projects", filterKey),
     async () => {
       const [projects, phases] = await Promise.all([
-        pb.collection("projects").getFullList<ProjectsResponse>({
+        pb.collection("projects").getFullList<ProjectWithExpand>({
           sort: "-ref",
           expand: "phase,assignee",
         }),
@@ -88,12 +88,12 @@ export async function getProjects(
 export async function getProjectById(
   pb: TypedPocketBase,
   id: string
-): Promise<ProjectsResponse | null> {
+): Promise<ProjectWithExpand | null> {
   return cache.getOrFetch(
     cacheKey(pb, "project", id),
     async () => {
       try {
-        return await pb.collection("projects").getOne<ProjectsResponse>(id, {
+        return await pb.collection("projects").getOne<ProjectWithExpand>(id, {
           expand: "phase,assignee",
         });
       } catch {
@@ -154,14 +154,14 @@ export async function getProjectWithDetails(
 export async function getActiveProjects(
   pb: TypedPocketBase,
   limit?: number
-): Promise<ProjectsResponse[]> {
+): Promise<ProjectWithExpand[]> {
   return cache.getOrFetch(
     cacheKey(pb, "projects", "active", String(limit ?? "all")),
     async () => {
-      const projects = await pb.collection("projects").getFullList<ProjectsResponse>({
+      const projects = await pb.collection("projects").getFullList<ProjectWithExpand>({
         sort: "-created",
         filter: "active=true",
-        expand: "phase",
+        expand: "phase,assignee",
       });
 
       return limit ? projects.slice(0, limit) : projects;
