@@ -5,6 +5,8 @@ import StatsGrid from "@/components/StatsGrid.astro";
 import StatItem from "@/components/StatItem.astro";
 import DetailSection from "@/components/DetailSection.astro";
 import EmptyState from "@/components/EmptyState.astro";
+import PaymentBadge from "@/components/PaymentBadge.astro";
+import BudgetHeroCard from "@/components/BudgetHeroCard.astro";
 import {
 	getLangFromUrl,
 	useTranslations,
@@ -48,16 +50,51 @@ const totalPaid = payments
 	.filter((p) => p.status === "paid")
 	.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-const remainingCash = (budgetItem?.cash || 0) - totalObligatedCash;
-const remainingCost = (budgetItem?.cost || 0) - totalObligatedCost;
-
 // Calculate transfers in/out
 const transfersIn = transfers
 	.filter((t) => t.to === id)
 	.reduce((sum, t) => sum + (t.cash || 0), 0);
+// All outgoing transfers (both to other budgets and to undefined = system exits)
 const transfersOut = transfers
 	.filter((t) => t.from === id)
 	.reduce((sum, t) => sum + (t.cash || 0), 0);
+
+const transfersInCost = transfers
+	.filter((t) => t.to === id)
+	.reduce((sum, t) => sum + (t.cost || 0), 0);
+const transfersOutCost = transfers
+	.filter((t) => t.from === id)
+	.reduce((sum, t) => sum + (t.cost || 0), 0);
+
+// Transfers in with no `from` = incoming from outside the system
+const transfersInNoFrom = transfers
+	.filter((t) => t.to === id && !t.from)
+	.reduce((sum, t) => sum + (t.cash || 0), 0);
+const transfersInNoFromCost = transfers
+	.filter((t) => t.to === id && !t.from)
+	.reduce((sum, t) => sum + (t.cost || 0), 0);
+
+// Transfers out with no `to` = cash leaving the system entirely
+const transfersOutNoTo = transfers
+	.filter((t) => t.from === id && !t.to)
+	.reduce((sum, t) => sum + (t.cash || 0), 0);
+
+// Adjusted cash = original + transfers in − transfers out
+const adjustedCash = (budgetItem?.cash || 0) + transfersIn - transfersOut;
+// Adjusted cost = original + transfers in − transfers out
+const adjustedCost = (budgetItem?.cost || 0) + transfersInCost - transfersOutCost;
+
+// Combined hero totals
+const heroTotal = adjustedCash + adjustedCost;
+const heroTotalObligated = totalObligatedCash + totalObligatedCost;
+// Total Remaining = Total − Total Obligated − transfers out of system − paid
+const heroRemaining = heroTotal - heroTotalObligated - transfersOutNoTo - totalPaid;
+
+// True remaining: adjusted cash − paid (actual cash balance)
+const remainingCash = adjustedCash - totalPaid;
+// Uncommitted: adjusted − obligated (commitment reference)
+const uncommittedCash = adjustedCash - totalObligatedCash;
+const remainingCost = (budgetItem?.cost || 0) + transfersInNoFromCost - totalObligatedCost;
 
 const backPath = getLocalizedPath("/budget", lang);
 ---
@@ -77,7 +114,7 @@ const backPath = getLocalizedPath("/budget", lang);
 				</a>
 			</div>
 		) : (
-			<div class="space-y-24">
+			<div class="space-y-10 md:space-y-20">
 				{/* Header */}
 				<PageHeader
 					title={budget.name}
@@ -95,51 +132,21 @@ const backPath = getLocalizedPath("/budget", lang);
 					</div>
 				</PageHeader>
 
-				{/* Budget Allocation */}
+				{/* Budget Allocation + Cash Balance */}
 				<DetailSection title={t("budget.items")}>
 					{!budgetItem ? (
 						<EmptyState
 							message={`${t("budget.noItemsFound")} ${selectedYear}`}
 						/>
 					) : (
-						<StatsGrid columns={4}>
-							<StatItem
-								label={t("budget.cash")}
-								value={formatCurrency(
-									budgetItem.cash || 0,
-									lang,
-								)}
-								size="md"
-							/>
-							<StatItem
-								label={t("budget.cost")}
-								value={formatCurrency(
-									budgetItem.cost || 0,
-									lang,
-								)}
-								size="md"
-								variant="muted"
-								mono
-							/>
-							<StatItem
-								label={t("budget.remainingCash")}
-								value={formatCurrency(remainingCash, lang)}
-								size="md"
-								variant={
-									remainingCash < 0 ? "negative" : "positive"
-								}
-								mono
-							/>
-							<StatItem
-								label={t("budget.remainingCost")}
-								value={formatCurrency(remainingCost, lang)}
-								size="md"
-								variant={
-									remainingCost < 0 ? "negative" : "muted"
-								}
-								mono
-							/>
-						</StatsGrid>
+						<BudgetHeroCard
+							total={heroTotal}
+							obligated={heroTotalObligated}
+							remaining={heroRemaining}
+							spent={totalPaid}
+							transfersOut={transfersOutNoTo}
+							lang={lang}
+						/>
 					)}
 				</DetailSection>
 
@@ -163,6 +170,7 @@ const backPath = getLocalizedPath("/budget", lang);
 							label={t("common.paid")}
 							value={formatCurrency(totalPaid, lang)}
 							size="md"
+							variant="positive"
 							mono
 						/>
 						<StatItem
@@ -172,30 +180,6 @@ const backPath = getLocalizedPath("/budget", lang);
 							variant="muted"
 						/>
 					</StatsGrid>
-
-					{/* Transfers Summary */}
-					{(transfersIn > 0 || transfersOut > 0) && (
-						<div class="mt-8 pt-8 border-t border-border">
-							<StatsGrid columns={2}>
-								<div>
-									<p class="text-xs text-muted-foreground uppercase tracking-widest mb-2">
-										Transfers In
-									</p>
-									<p class="text-2xl font-bold text-emerald-600 arshid">
-										+{formatCurrency(transfersIn, lang)}
-									</p>
-								</div>
-								<div>
-									<p class="text-xs text-muted-foreground uppercase tracking-widest mb-2">
-										Transfers Out
-									</p>
-									<p class="text-2xl font-bold text-destructive arshid">
-										-{formatCurrency(transfersOut, lang)}
-									</p>
-								</div>
-							</StatsGrid>
-						</div>
-					)}
 				</DetailSection>
 
 				{/* Obligations */}
@@ -205,52 +189,56 @@ const backPath = getLocalizedPath("/budget", lang);
 					{obligations.length === 0 ? (
 						<EmptyState message={t("detail.noObligations")} />
 					) : (
-						<table class="data-table">
-							<thead>
-								<tr>
-									<th>{t("table.ref")}</th>
-									<th>{t("table.project")}</th>
-									<th>{t("table.date")}</th>
-									<th class="text-right">
-										{t("budget.cash")}
-									</th>
-									<th class="text-right">
-										{t("budget.cost")}
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								{obligations.map((obligation) => (
+						<div class="table-scroll">
+							<table class="data-table min-w-full">
+								<thead>
 									<tr>
-										<td class="mono text-muted-foreground align-middle">
-											{obligation.ref}
-										</td>
-										<td class="align-middle font-medium">
-											{obligation.expand?.project?.name || "—"}
-										</td>
-										<td class="text-muted-foreground align-middle">
-											{formatDateFull(
-												obligation.date ||
-													obligation.created,
-												lang,
-											)}
-										</td>
-										<td class="text-right font-medium arshid text-base align-middle">
-											{formatCurrency(
-												obligation.cash || 0,
-												lang,
-											)}
-										</td>
-										<td class="text-right text-muted-foreground arshid align-middle">
-											{formatCurrency(
-												obligation.cost || 0,
-												lang,
-											)}
-										</td>
+										<th>{t("table.project")}</th>
+										<th class="hidden sm:table-cell">{t("table.ref")}</th>
+										<th class="hidden md:table-cell">{t("table.date")}</th>
+										<th class="text-right">
+											{t("budget.cash")}
+										</th>
+										<th class="hidden sm:table-cell text-right">
+											{t("budget.cost")}
+										</th>
 									</tr>
-								))}
-							</tbody>
-						</table>
+								</thead>
+								<tbody>
+									{obligations.map((obligation) => (
+										<tr>
+											<td class="align-middle">
+												<p class="font-medium">{obligation.expand?.project?.name || "—"}</p>
+												<p class="sm:hidden text-xs text-muted-foreground mono mt-0.5">{obligation.ref}</p>
+												<p class="md:hidden text-xs text-muted-foreground mt-0.5">{formatDateFull(obligation.date || obligation.created, lang)}</p>
+											</td>
+											<td class="hidden sm:table-cell mono text-muted-foreground align-middle">
+												{obligation.ref}
+											</td>
+											<td class="hidden md:table-cell text-muted-foreground align-middle">
+												{formatDateFull(
+													obligation.date ||
+														obligation.created,
+													lang,
+												)}
+											</td>
+											<td class="text-right font-medium arshid align-middle whitespace-nowrap">
+												{formatCurrency(
+													obligation.cash || 0,
+													lang,
+												)}
+											</td>
+											<td class="hidden sm:table-cell text-right text-muted-foreground arshid align-middle whitespace-nowrap">
+												{formatCurrency(
+													obligation.cost || 0,
+													lang,
+												)}
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
 					)}
 				</DetailSection>
 
@@ -261,63 +249,54 @@ const backPath = getLocalizedPath("/budget", lang);
 					{payments.length === 0 ? (
 						<EmptyState message={t("detail.noPayments")} />
 					) : (
-						<table class="data-table">
-							<thead>
-								<tr>
-									<th>{t("table.ref")}</th>
-									<th>{t("payments.payment")}</th>
-									<th>{t("table.status")}</th>
-									<th>{t("table.date")}</th>
-									<th class="text-right">
-										{t("table.amount")}
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								{payments.map((payment) => (
+						<div class="table-scroll">
+							<table class="data-table min-w-full">
+								<thead>
 									<tr>
-										<td class="arshid text-muted-foreground align-middle">
-											{payment.ref}
-										</td>
-										<td class="align-middle font-medium">
-											{payment.name ||
-												payment.expand?.project?.name ||
-												"—"}
-										</td>
-										<td class="align-middle">
-											<span
-												class:list={[
-													"badge text-xs",
-													payment.status === "paid"
-														? "badge-success"
-														: payment.status === "pending"
-															? "badge-info"
-															: "badge-warning",
-												]}
-											>
-												{payment.status === "paid"
-													? t("payments.paid")
-													: payment.status === "pending"
-														? t("payments.pending")
-														: t("payments.planned")}
-											</span>
-										</td>
-										<td class="text-muted-foreground align-middle">
-											{formatDateFull(
-												payment.created,
-												lang,
-											)}
-										</td>
-										<td class="text-right font-medium arshid text-base align-middle">
-											{formatCurrency(
-												payment.amount || 0,
-												lang,
-											)}
-										</td>
+										<th>{t("payments.payment")}</th>
+										<th class="hidden sm:table-cell">{t("table.ref")}</th>
+										<th>{t("table.status")}</th>
+										<th class="hidden md:table-cell">{t("table.date")}</th>
+										<th class="text-right">
+											{t("table.amount")}
+										</th>
 									</tr>
-								))}
-							</tbody>
-						</table>
+								</thead>
+								<tbody>
+									{payments.map((payment) => (
+										<tr>
+											<td class="align-middle">
+												<p class="font-medium">
+													{payment.name ||
+														payment.expand?.project?.name ||
+														"—"}
+												</p>
+												<p class="sm:hidden text-xs text-muted-foreground arshid mt-0.5">{payment.ref}</p>
+												<p class="md:hidden text-xs text-muted-foreground mt-0.5">{formatDateFull(payment.created, lang)}</p>
+											</td>
+											<td class="hidden sm:table-cell arshid text-muted-foreground align-middle">
+												{payment.ref}
+											</td>
+											<td class="align-middle">
+												<PaymentBadge status={payment.status} lang={lang} />
+											</td>
+											<td class="hidden md:table-cell text-muted-foreground align-middle">
+												{formatDateFull(
+													payment.created,
+													lang,
+												)}
+											</td>
+											<td class="text-right font-medium arshid align-middle whitespace-nowrap">
+												{formatCurrency(
+													payment.amount || 0,
+													lang,
+												)}
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
 					)}
 				</DetailSection>
 
@@ -328,77 +307,80 @@ const backPath = getLocalizedPath("/budget", lang);
 					{transfers.length === 0 ? (
 						<EmptyState message={t("detail.noTransfers")} />
 					) : (
-						<table class="data-table">
-							<thead>
-								<tr>
-									<th>{t("common.from")}</th>
-									<th>{t("common.to")}</th>
-									<th>{t("table.date")}</th>
-									<th>{t("common.note")}</th>
-									<th class="text-right">
-										{t("budget.cash")}
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								{transfers.map((transfer) => {
-									const isIncoming = transfer.to === id;
-									return (
-										<tr>
-											<td class="align-middle">
-												{transfer.from === id ? (
-													<span class="font-medium">
-														{budget?.name}
-													</span>
-												) : (
-													<span class="text-muted-foreground">
-														{transfer.expand?.from
-															?.name ||
-															transfer.from}
-													</span>
-												)}
-											</td>
-											<td class="align-middle">
-												{transfer.to === id ? (
-													<span class="font-medium">
-														{budget?.name}
-													</span>
-												) : (
-													<span class="text-muted-foreground">
-														{transfer.expand?.to
-															?.name ||
-															transfer.to}
-													</span>
-												)}
-											</td>
-											<td class="text-muted-foreground align-middle">
-												{formatDateFull(
-													transfer.created,
-													lang,
-												)}
-											</td>
-											<td class="text-muted-foreground max-w-xs truncate align-middle">
-												{transfer.note || "—"}
-											</td>
-											<td
-												class:list={[
-													"text-right font-medium arshid text-base align-middle",
-													isIncoming
-														? "text-emerald-600"
-														: "text-destructive",
-												]}
-											>
-												{isIncoming ? "+" : "-"}
-												{formatCurrency(
-													transfer.cash || 0,
-													lang,
-												)}
-											</td>
-										</tr>
-									);
-								})}
-							</tbody>
-						</table>
+						<div class="table-scroll">
+							<table class="data-table min-w-full">
+								<thead>
+									<tr>
+										<th>{t("common.from")}</th>
+										<th>{t("common.to")}</th>
+										<th class="hidden md:table-cell">{t("table.date")}</th>
+										<th class="hidden lg:table-cell">{t("common.note")}</th>
+										<th class="text-right">
+											{t("budget.cash")}
+										</th>
+									</tr>
+								</thead>
+								<tbody>
+									{transfers.map((transfer) => {
+										const isIncoming = transfer.to === id;
+										return (
+											<tr>
+												<td class="align-middle">
+													{transfer.from === id ? (
+														<span class="font-medium">
+															{budget?.name}
+														</span>
+													) : (
+														<span class="text-muted-foreground">
+															{transfer.expand?.from
+																?.name ||
+																transfer.from}
+														</span>
+													)}
+													<p class="md:hidden text-xs text-muted-foreground mt-0.5">{formatDateFull(transfer.created, lang)}</p>
+												</td>
+												<td class="align-middle">
+													{transfer.to === id ? (
+														<span class="font-medium">
+															{budget?.name}
+														</span>
+													) : (
+														<span class="text-muted-foreground">
+															{transfer.expand?.to
+																?.name ||
+																transfer.to}
+														</span>
+													)}
+												</td>
+												<td class="hidden md:table-cell text-muted-foreground align-middle">
+													{formatDateFull(
+														transfer.created,
+														lang,
+													)}
+												</td>
+												<td class="hidden lg:table-cell text-muted-foreground max-w-xs truncate align-middle">
+													{transfer.note || "—"}
+												</td>
+												<td
+													class:list={[
+														"text-right font-medium arshid align-middle whitespace-nowrap",
+														isIncoming
+															? "text-emerald-600"
+															: "text-destructive",
+													]}
+												>
+													{isIncoming ? "+" : "-"}
+													{formatCurrency(
+														transfer.cash || 0,
+														lang,
+													)}
+												</td>
+											</tr>
+										);
+									})}
+								</tbody>
+							</table>
+						</div>
 					)}
 				</DetailSection>
 			</div>

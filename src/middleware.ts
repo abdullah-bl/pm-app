@@ -46,7 +46,7 @@ export const onRequest = defineMiddleware((context, next) => {
     const locale = getLocaleFromPath(pathname);
     if (!locale) {
         const newPath = `/${defaultLang}${pathname === "/" ? "" : pathname}`;
-        return Response.redirect(new URL(newPath, context.url), 302);
+        return new Response(null, { status: 302, headers: { Location: newPath } });
     }
 
     // Allow public routes without auth
@@ -56,7 +56,7 @@ export const onRequest = defineMiddleware((context, next) => {
 
     // Auth check for protected routes
     if (!isAuth(context.cookies)) {
-        return Response.redirect(new URL(`/${locale}/login`, context.url), 302);
+        return new Response(null, { status: 302, headers: { Location: `/${locale}/login` } });
     }
 
     // Load auth store from cookie

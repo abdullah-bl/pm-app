@@ -1,5 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import EmptyState from "@/components/EmptyState.astro";
+import PhaseBadge from "@/components/PhaseBadge.astro";
 import {
 	getLangFromUrl,
 	useTranslations,
@@ -18,18 +20,22 @@ const currentYear = new Date().getFullYear();
 const {
 	projects,
 	plannedPayments,
-	yearObligations,
 	yearPayments,
 	totalBudgetCash,
 	totalObligatedCash,
 	totalPaid,
+	cashOutTransfers,
+	cashInTransfers,
 	totalProjectValue,
-	budgetRemainingCash,
 } = await getDashboardData(pb, currentYear);
+
+const updatedCash =
+	(totalBudgetCash || 0) - (cashOutTransfers || 0) - (cashInTransfers || 0);
+const remainingCash = updatedCash - (totalObligatedCash || 0) + (totalPaid || 0);
+const isOverBudget = remainingCash < 0;
 
 const recentProjects = projects.slice(0, 5);
 
-// Payments breakdown by status for the current year
 const paidPayments = yearPayments.filter((p) => p.status === "paid");
 const pendingPayments = yearPayments.filter((p) => p.status === "pending");
 const plannedYearPayments = yearPayments.filter((p) => p.status === "planned");
@@ -45,115 +51,127 @@ const totalPlannedYear = plannedYearPayments.reduce(
 ---
 
 <Layout>
+	<!-- Page Header -->
+	<header class="mb-24">
+		<p class="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+			PM / {currentYear}
+		</p>
+		<h1 class="page-title mt-3">
+			{t("dashboard.title")}
+		</h1>
+		<p class="page-subtitle">
+			{projects.length} {t("projects.active")}
+			<span class="mx-2 text-muted-foreground/40">·</span>
+			{formatCurrency(totalProjectValue, lang)} {t("projects.totalValue")}
+		</p>
+	</header>
+
 	<div class="space-y-24">
-		<!-- Header -->
+		<!-- Budget Summary -->
 		<section>
-			<p class="section-title mb-4">
-				{currentYear}
-				{t("dashboard.overview")}
-			</p>
-			<h1 class="page-title">{t("dashboard.title")}</h1>
-		</section>
+			<h2 class="section-title">
+				{currentYear} {t("budget.title")}
+			</h2>
+			<div class="border border-border rounded-xl p-10">
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-16">
+					<div>
+						<span class="stat-label">{t("budget.updatedCash")}</span>
+						<p class="stat-number arshid">{formatCurrency(updatedCash, lang)}</p>
+					</div>
+					<div>
+						<span class="stat-label">{t("budget.remainingCash")}</span>
+						<p class:list={["stat-number arshid", isOverBudget ? "text-destructive" : ""]}>
+							{formatCurrency(remainingCash, lang)}
+						</p>
+					</div>
+					<div>
+						<span class="stat-label">{t("budget.obligatedCash")}</span>
+						<p class="stat-number arshid">{formatCurrency(totalObligatedCash, lang)}</p>
+					</div>
+				</div>
 
-		<!-- Budget Summary - Primary Stats -->
-		<section>
-			<h2 class="section-title">{t("dashboard.budgetSummary")}</h2>
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
-				<div>
-					<span class="stat-label">{t("budget.cash")}</span>
-					<p class="stat-number arshid">
-						{formatCurrency(totalBudgetCash, lang)}
-					</p>
-				</div>
-				<div>
-					<span class="stat-label">{t("budget.obligatedCash")}</span>
-					<p class="stat-number arshid">
-						{formatCurrency(totalObligatedCash, lang)}
-					</p>
-				</div>
-				<div>
-					<span class="stat-label">{t("budget.remainingCash")}</span>
-					<p
-						class:list={[
-							"stat-number arshid",
-							budgetRemainingCash < 0
-								? "text-destructive"
-								: "text-emerald-600",
-						]}
-					>
-						{formatCurrency(budgetRemainingCash, lang)}
-					</p>
+				<!-- Budget utilization bar -->
+				<div class="mt-10 space-y-3">
+					{(() => {
+						const barTotal = Math.max(updatedCash || 1, totalObligatedCash || 0);
+						const paidPct = Math.min(((totalPaid || 0) / barTotal) * 100, 100);
+						const unpaidObligatedPct = Math.min(
+							(((totalObligatedCash || 0) - (totalPaid || 0)) / barTotal) * 100,
+							100 - paidPct,
+						);
+						const updatedCashLinePct = Math.min(
+							((updatedCash || 0) / barTotal) * 100,
+							100,
+						);
+						return (
+							<>
+								<div class="relative h-2 rounded-full bg-muted overflow-visible">
+									<div class="absolute inset-y-0 left-0 flex h-full w-full rounded-full overflow-hidden">
+										<div class="h-full bg-emerald-500 transition-all" style={`width: ${paidPct}%`} />
+										<div class="h-full bg-amber-400 transition-all" style={`width: ${unpaidObligatedPct}%`} />
+									</div>
+									<div
+										class:list={[
+											"absolute top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full z-10",
+											isOverBudget ? "bg-destructive" : "bg-foreground/40",
+										]}
+										style={`left: ${updatedCashLinePct}%`}
+									/>
+								</div>
+								<div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
+									<span class="flex items-center gap-1.5">
+										<span class="inline-block w-2 h-2 rounded-sm bg-emerald-500" />
+										{t("payments.paid")} {formatCurrency(totalPaid, lang)}
+									</span>
+									<span class="flex items-center gap-1.5">
+										<span class="inline-block w-2 h-2 rounded-sm bg-amber-400" />
+										{t("budget.unpaidObligations")} {formatCurrency(Math.max((totalObligatedCash || 0) - (totalPaid || 0), 0), lang)}
+									</span>
+									<span class:list={["flex items-center gap-1.5 ms-auto", isOverBudget ? "text-destructive" : ""]}>
+										<span class:list={["inline-block w-0.5 h-3 rounded-full", isOverBudget ? "bg-destructive" : "bg-foreground/40"]} />
+										{t("budget.updatedCash")} {formatCurrency(updatedCash, lang)}
+									</span>
+								</div>
+							</>
+						);
+					})()}
 				</div>
 			</div>
 		</section>
 
-		<!-- Payments Overview - Planned / Pending / Paid -->
+		<!-- Payments Overview -->
 		<section>
-			<h2 class="section-title">{t("dashboard.paymentsOverview")}</h2>
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
-				<!-- Planned -->
-				<div class="border-s-4 border-blue-400 ps-6">
-					<span class="stat-label">{t("payments.planned")}</span>
-					<p class="stat-number-md arshid">
-						{formatCurrency(totalPlannedYear, lang)}
-					</p>
-					<p class="text-muted-foreground mt-3">
-						{plannedYearPayments.length}
-						{t("budget.transactions")}
-					</p>
-				</div>
-				<!-- Pending -->
-				<div class="border-s-4 border-amber-400 ps-6">
-					<span class="stat-label">{t("payments.pending")}</span>
-					<p class="stat-number-md arshid">
-						{formatCurrency(totalPending, lang)}
-					</p>
-					<p class="text-muted-foreground mt-3">
-						{pendingPayments.length}
-						{t("budget.transactions")}
-					</p>
-				</div>
-				<!-- Paid -->
-				<div class="border-s-4 border-emerald-400 ps-6">
-					<span class="stat-label">{t("payments.paid")}</span>
-					<p class="stat-number-md arshid">
-						{formatCurrency(totalPaid, lang)}
-					</p>
-					<p class="text-muted-foreground mt-3">
-						{paidPayments.length}
-						{t("budget.transactions")}
-					</p>
+			<h2 class="section-title">
+				{currentYear} {t("payments.title")}
+			</h2>
+			<div class="border border-border rounded-xl p-10">
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-16">
+					<div>
+						<span class="stat-label">{t("payments.planned")}</span>
+						<p class="stat-number-md arshid">{formatCurrency(totalPlannedYear, lang)}</p>
+						<p class="text-sm text-muted-foreground mt-2">
+							{plannedYearPayments.length} {t("budget.transactions")}
+						</p>
+					</div>
+					<div>
+						<span class="stat-label">{t("payments.pending")}</span>
+						<p class="stat-number-md arshid">{formatCurrency(totalPending, lang)}</p>
+						<p class="text-sm text-muted-foreground mt-2">
+							{pendingPayments.length} {t("budget.transactions")}
+						</p>
+					</div>
+					<div>
+						<span class="stat-label">{t("payments.paid")}</span>
+						<p class="stat-number-md arshid">{formatCurrency(totalPaid, lang)}</p>
+						<p class="text-sm text-muted-foreground mt-2">
+							{paidPayments.length} {t("budget.transactions")}
+						</p>
+					</div>
 				</div>
 			</div>
 		</section>
 
-		<!-- Projects & Obligations Summary -->
-		<section>
-			<h2 class="section-title">{t("dashboard.activity")}</h2>
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16">
-				<div>
-					<span class="stat-label"
-						>{t("dashboard.activeProjects")}</span
-					>
-					<p class="stat-number-md">{projects.length}</p>
-					<p class="text-muted-foreground arshid mt-3">
-						{formatCurrency(totalProjectValue, lang)}
-						{t("budget.value")}
-					</p>
-				</div>
-				<div>
-					<span class="stat-label">{t("budget.obligations")}</span>
-					<p class="stat-number-md arshid">
-						{yearObligations.length}
-					</p>
-					<p class="text-muted-foreground mt-3">
-						{t("budget.commitments")}
-					</p>
-				</div>
-			</div>
-		</section>
-
-		<!-- Active Projects Table -->
+		<!-- Active Projects -->
 		<section>
 			<div class="flex items-center justify-between mb-8">
 				<h2 class="section-title mb-0!">
@@ -161,7 +179,7 @@ const totalPlannedYear = plannedYearPayments.reduce(
 				</h2>
 				<a
 					href={getLocalizedPath("/projects?active=true", lang)}
-					class="text-base text-muted-foreground hover:text-foreground transition-colors"
+					class="text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
 				>
 					{t("dashboard.viewAll")} &rarr;
 				</a>
@@ -169,119 +187,50 @@ const totalPlannedYear = plannedYearPayments.reduce(
 
 			{
 				recentProjects.length === 0 ? (
-					<p class="text-muted-foreground py-16 text-center text-lg">
-						{t("dashboard.noActiveProjects")}
-					</p>
+					<EmptyState message={t("dashboard.noActiveProjects")} />
 				) : (
-					<table class="data-table">
-						<thead>
-							<tr>
-								<th>{t("table.project")}</th>
-								<th>{t("table.phase")}</th>
-								<th class="text-right">{t("table.value")}</th>
-							</tr>
-						</thead>
-						<tbody>
-							{recentProjects.map((project) => (
-								<tr
-									class="clickable"
-									onclick={`window.location.href='${getLocalizedPath(`/projects/${project.id}`, lang)}'`}
-								>
-									<td>
-										<p class="font-medium text-lg leading-snug">
-											{project.name}
-										</p>
-										<p class="text-muted-foreground mono mt-1">
-											{project.slug || project.ref}
-										</p>
-									</td>
-									<td class="align-middle">
-										{project.expand?.phase ? (
-											<span
-												class="badge"
-												style={`background-color: ${project.expand.phase.color}20; color: ${project.expand.phase.color};`}
-											>
-												{project.expand.phase.name}
-											</span>
-										) : (
-											<span class="text-muted-foreground">
-												—
-											</span>
-										)}
-									</td>
-									<td class="text-right font-medium arshid text-lg align-middle">
-										{formatCurrency(
-											project.total || 0,
-											lang,
-										)}
-									</td>
+					<div class="table-scroll">
+						<table class="data-table min-w-full">
+							<thead>
+								<tr>
+									<th>{t("table.project")}</th>
+									<th class="hidden sm:table-cell">{t("table.phase")}</th>
+									<th class="text-right">{t("table.value")}</th>
 								</tr>
-							))}
-						</tbody>
-					</table>
+							</thead>
+							<tbody>
+								{recentProjects.map((project) => (
+									<tr
+										class="clickable"
+										onclick={`window.location.href='${getLocalizedPath(`/projects/${project.id}`, lang)}'`}
+									>
+										<td>
+											<p class="font-medium leading-snug">{project.name}</p>
+											<p class="text-muted-foreground mono text-sm mt-1">
+												{project.slug || project.ref}
+											</p>
+											{project.expand?.phase && (
+												<span class="sm:hidden mt-2 inline-block">
+													<PhaseBadge phase={project.expand.phase} />
+												</span>
+											)}
+										</td>
+										<td class="hidden sm:table-cell align-middle">
+											<PhaseBadge phase={project.expand?.phase} />
+										</td>
+										<td class="text-right font-medium mono align-middle whitespace-nowrap">
+											{formatCurrency(project.total || 0, lang)}
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
 				)
 			}
 		</section>
 
-		<!-- Planned Payments Table -->
-		<section>
-			<div class="flex items-center justify-between mb-8">
-				<h2 class="section-title mb-0!">
-					{t("dashboard.plannedPayments")}
-				</h2>
-				<a
-					href={getLocalizedPath("/payments?status=planned", lang)}
-					class="text-base text-muted-foreground hover:text-foreground transition-colors"
-				>
-					{t("dashboard.viewAll")} &rarr;
-				</a>
-			</div>
-
-			{
-				plannedPayments.length === 0 ? (
-					<p class="text-muted-foreground py-16 text-center text-lg">
-						{t("dashboard.noPlannedPayments")}
-					</p>
-				) : (
-					<table class="data-table">
-						<thead>
-							<tr>
-								<th>{t("payments.payment")}</th>
-								<th>{t("table.due")}</th>
-								<th class="text-right">{t("table.amount")}</th>
-							</tr>
-						</thead>
-						<tbody>
-							{plannedPayments.slice(0, 5).map((payment) => (
-								<tr
-									class="clickable"
-									onclick={`window.location.href='${getLocalizedPath(`/payments/${payment.id}`, lang)}'`}
-								>
-									<td>
-										<p class="font-medium text-lg">
-											{payment.name}
-										</p>
-									</td>
-									<td class="text-muted-foreground align-middle">
-										{payment.due_date
-											? formatDate(payment.due_date, lang)
-											: "—"}
-									</td>
-									<td class="text-right font-medium arshid text-lg align-middle">
-										{formatCurrency(
-											payment.amount || 0,
-											lang,
-										)}
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				)
-			}
-		</section>
-
-		<!-- Recent Paid Payments Table -->
+		<!-- Recent Payments -->
 		<section>
 			<div class="flex items-center justify-between mb-8">
 				<h2 class="section-title mb-0!">
@@ -289,7 +238,7 @@ const totalPlannedYear = plannedYearPayments.reduce(
 				</h2>
 				<a
 					href={getLocalizedPath("/payments?status=paid", lang)}
-					class="text-base text-muted-foreground hover:text-foreground transition-colors"
+					class="text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
 				>
 					{t("dashboard.viewAll")} &rarr;
 				</a>
@@ -297,40 +246,40 @@ const totalPlannedYear = plannedYearPayments.reduce(
 
 			{
 				paidPayments.length === 0 ? (
-					<p class="text-muted-foreground py-16 text-center text-lg">
-						{t("dashboard.noPaymentsThisYear")}
-					</p>
+					<EmptyState message={t("dashboard.noPaymentsThisYear")} />
 				) : (
-					<table class="data-table">
-						<thead>
-							<tr>
-								<th>{t("table.ref")}</th>
-								<th>{t("table.date")}</th>
-								<th class="text-right">{t("table.amount")}</th>
-							</tr>
-						</thead>
-						<tbody>
-							{paidPayments.slice(0, 5).map((payment) => (
-								<tr
-									class="clickable"
-									onclick={`window.location.href='${getLocalizedPath(`/payments/${payment.id}`, lang)}'`}
-								>
-									<td class="mono text-muted-foreground align-middle">
-										{payment.ref || "—"}
-									</td>
-									<td class="text-muted-foreground align-middle">
-										{formatDate(payment.created, lang)}
-									</td>
-									<td class="text-right font-medium arshid text-lg align-middle">
-										{formatCurrency(
-											payment.amount || 0,
-											lang,
-										)}
-									</td>
+					<div class="table-scroll">
+						<table class="data-table min-w-full">
+							<thead>
+								<tr>
+									<th>{t("table.ref")}</th>
+									<th class="hidden sm:table-cell">{t("table.date")}</th>
+									<th class="text-right">{t("table.amount")}</th>
 								</tr>
-							))}
-						</tbody>
-					</table>
+							</thead>
+							<tbody>
+								{paidPayments.slice(0, 5).map((payment) => (
+									<tr
+										class="clickable"
+										onclick={`window.location.href='${getLocalizedPath(`/payments/${payment.id}`, lang)}'`}
+									>
+										<td>
+											<p class="mono text-muted-foreground">{payment.ref || "—"}</p>
+											<p class="sm:hidden text-sm text-muted-foreground mt-1">
+												{formatDate(payment.created, lang)}
+											</p>
+										</td>
+										<td class="hidden sm:table-cell text-muted-foreground align-middle">
+											{formatDate(payment.created, lang)}
+										</td>
+										<td class="text-right font-medium mono align-middle whitespace-nowrap">
+											{formatCurrency(payment.amount || 0, lang)}
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
 				)
 			}
 		</section>

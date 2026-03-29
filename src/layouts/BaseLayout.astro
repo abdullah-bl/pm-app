@@ -1,0 +1,43 @@
+---
+import "@/styles/global.css";
+import { getLangFromUrl, useTranslations, getDirection } from "@/i18n/utils";
+
+interface Props {
+	title?: string;
+	description?: string;
+	bodyClass?: string;
+}
+
+const {
+	title = "PM",
+	description = "Project Management System",
+	bodyClass = "",
+} = Astro.props;
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+const dir = getDirection(lang);
+---
+
+<!doctype html>
+<html lang={lang} dir={dir}>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+			rel="stylesheet"
+		/>
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<slot name="head" />
+	</head>
+	<body class:list={[bodyClass]}>
+		<slot name="body-top" />
+		<slot />
+	</body>
+</html>

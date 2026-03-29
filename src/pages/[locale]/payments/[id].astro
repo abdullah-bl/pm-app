@@ -5,6 +5,7 @@ import StatsGrid from "@/components/StatsGrid.astro";
 import StatItem from "@/components/StatItem.astro";
 import DetailSection from "@/components/DetailSection.astro";
 import EmptyState from "@/components/EmptyState.astro";
+import PaymentBadge from "@/components/PaymentBadge.astro";
 import {
 	getLangFromUrl,
 	useTranslations,
@@ -12,6 +13,8 @@ import {
 	formatCurrency,
 	formatDateFull,
 } from "@/i18n/utils";
+import type { Lang } from "@/i18n/ui";
+import { ui, defaultLang } from "@/i18n/ui";
 import { getPaymentById } from "@/lib/data";
 
 const lang = getLangFromUrl(Astro.url);
@@ -26,13 +29,11 @@ const payment = await getPaymentById(pb, id!);
 const now = new Date();
 const isOverdue = payment?.status === "planned" && payment?.due_date && new Date(payment.due_date) < now;
 
-const backPath = getLocalizedPath("/payments", lang);
+const statusLabel = payment?.status
+	? t(`payments.${payment.status}` as keyof (typeof ui)[typeof defaultLang])
+	: "—";
 
-const statusLabel = payment?.status === "paid"
-	? t("payments.paid")
-	: payment?.status === "pending"
-		? t("payments.pending")
-		: t("payments.planned");
+const backPath = getLocalizedPath("/payments", lang);
 ---
 
 <Layout>
@@ -59,18 +60,7 @@ const statusLabel = payment?.status === "paid"
 					backLabel={t("detail.backToPayments")}
 				>
 					<div class="flex items-center gap-4 mt-3">
-						<span
-							class:list={[
-								"badge text-xs",
-								payment.status === "paid"
-									? "badge-success"
-									: payment.status === "pending"
-										? "badge-info"
-										: "badge-warning",
-							]}
-						>
-							{statusLabel}
-						</span>
+						<PaymentBadge status={payment.status} lang={lang} />
 						{payment.expand?.project && (
 							<p class="text-muted-foreground">
 								{t("table.project")}: {payment.expand.project.name}

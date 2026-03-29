@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI/UX Design Guidelines</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafafa;
+    --fg: #0a0a0a;
+    --muted: #f5f5f5;
+    --muted-fg: #737373;
+    --border: #e5e5e5;
+    --accent: #0a0a0a;
+    --emerald: #059669;
+    --blue: #2563eb;
+    --red: #dc2626;
+    --amber: #d97706;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  /* ── Layout ── */
+  .container { max-width: 1060px; margin: 0 auto; padding: 0 32px; }
+
+  /* ── Top Bar ── */
+  .topbar {
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    position: sticky;
+    top: 0;
+    background: rgba(250,250,250,0.95);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+  }
+  .topbar-inner {
+    max-width: 1060px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+  }
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--fg);
+    text-decoration: none;
+  }
+  .topnav { display: flex; gap: 28px; list-style: none; }
+  .topnav a {
+    font-size: 14px;
+    color: var(--muted-fg);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .topnav a:hover { color: var(--fg); }
+  .topnav a.active { color: var(--fg); font-weight: 500; }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 80px 0 64px;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted-fg);
+    margin-bottom: 20px;
+  }
+  .hero-title {
+    font-size: clamp(40px, 6vw, 64px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 20px;
+  }
+  .hero-title em {
+    font-style: normal;
+    color: var(--muted-fg);
+  }
+  .hero-desc {
+    font-size: 18px;
+    color: var(--muted-fg);
+    max-width: 520px;
+    line-height: 1.65;
+  }
+  .hero-meta {
+    display: flex;
+    gap: 32px;
+    margin-top: 40px;
+  }
+  .hero-stat { }
+  .hero-stat-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-fg);
+    margin-bottom: 4px;
+  }
+  .hero-stat-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Section ── */
+  .section { padding: 72px 0; border-bottom: 1px solid var(--border); }
+  .section:last-child { border-bottom: none; }
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted-fg);
+    margin-bottom: 40px;
+  }
+  .section-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .section-desc {
+    font-size: 15px;
+    color: var(--muted-fg);
+    margin-bottom: 40px;
+  }
+
+  /* ── Principle Cards ── */
+  .principles-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--border);
+  }
+  .principle-card {
+    background: var(--bg);
+    padding: 32px;
+  }
+  .principle-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted-fg);
+    margin-bottom: 16px;
+    letter-spacing: 0.05em;
+  }
+  .principle-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+  .principle-desc { font-size: 14px; color: var(--muted-fg); line-height: 1.6; }
+
+  /* ── Type Scale ── */
+  .type-rows { display: flex; flex-direction: column; gap: 0; }
+  .type-row {
+    display: grid;
+    grid-template-columns: 160px 1fr auto;
+    align-items: center;
+    gap: 24px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .type-row:last-child { border-bottom: none; }
+  .type-meta { }
+  .type-name { font-size: 13px; font-weight: 500; }
+  .type-class {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted-fg);
+    margin-top: 2px;
+  }
+  .type-size {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted-fg);
+    white-space: nowrap;
+  }
+
+  /* ── Color Swatches ── */
+  .palette-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+  }
+  .swatch { }
+  .swatch-color {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    margin-bottom: 10px;
+  }
+  .swatch-name { font-size: 13px; font-weight: 500; }
+  .swatch-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted-fg);
+    margin-top: 2px;
+  }
+  .swatch-usage { font-size: 12px; color: var(--muted-fg); margin-top: 4px; }
+
+  /* Semantic colors row */
+  .semantic-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 32px;
+    flex-wrap: wrap;
+  }
+  .semantic-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--muted);
+    border-radius: 6px;
+    padding: 10px 14px;
+    flex: 1;
+    min-width: 160px;
+  }
+  .semantic-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .semantic-info { font-size: 13px; }
+  .semantic-label { font-weight: 500; display: block; }
+  .semantic-use { font-size: 12px; color: var(--muted-fg); display: block; }
+
+  /* ── Badge Showcase ── */
+  .badge-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+  .badge {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 100px;
+    letter-spacing: 0.01em;
+  }
+  .badge-active { background: #d1fae5; color: #065f46; }
+  .badge-inactive { background: #f5f5f5; color: #525252; }
+  .badge-info { background: #dbeafe; color: #1e40af; }
+
+  /* ── Spacing Scale ── */
+  .spacing-rows { display: flex; flex-direction: column; gap: 0; }
+  .spacing-row {
+    display: grid;
+    grid-template-columns: 180px 80px 1fr auto;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .spacing-row:last-child { border-bottom: none; }
+  .spacing-context { font-size: 14px; }
+  .spacing-class {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted-fg);
+  }
+  .spacing-bar-wrap { }
+  .spacing-bar {
+    height: 8px;
+    background: var(--fg);
+    border-radius: 2px;
+    opacity: 0.12;
+  }
+  .spacing-px {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted-fg);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* ── Component Examples ── */
+  .component-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .component-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .component-preview {
+    background: var(--muted);
+    padding: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+  }
+  .component-info {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .component-name { font-size: 14px; font-weight: 600; }
+  .component-desc { font-size: 13px; color: var(--muted-fg); margin-top: 3px; }
+
+  /* Sample table inside component preview */
+  .sample-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .sample-table th {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-fg);
+    text-align: left;
+    padding: 0 0 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sample-table td {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .sample-table tr:last-child td { border-bottom: none; }
+  .amount { font-family: 'Space Mono', monospace; text-align: right; }
+
+  /* ── Do/Don't Grid ── */
+  .dndont-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .dndont-card {
+    border-radius: var(--radius-lg);
+    padding: 28px;
+  }
+  .dndont-card.do { background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .dndont-card.dont { background: #fff1f2; border: 1px solid #fecdd3; }
+  .dndont-header {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .dndont-card.do .dndont-header { color: #15803d; }
+  .dndont-card.dont .dndont-header { color: #be123c; }
+  .dndont-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .dndont-list li { font-size: 14px; display: flex; gap: 8px; align-items: flex-start; }
+  .dndont-card.do .dndont-list li::before { content: "✓"; color: #16a34a; font-weight: 700; flex-shrink: 0; }
+  .dndont-card.dont .dndont-list li::before { content: "✗"; color: #dc2626; font-weight: 700; flex-shrink: 0; }
+
+  /* ── Formatting Examples ── */
+  .format-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .format-card {
+    background: var(--muted);
+    border-radius: var(--radius);
+    padding: 24px;
+    text-align: center;
+  }
+  .format-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-fg);
+    margin-bottom: 12px;
+  }
+  .format-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .format-example {
+    font-size: 12px;
+    color: var(--muted-fg);
+    margin-top: 6px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* ── File Structure ── */
+  .filetree {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    background: var(--fg);
+    color: #e5e5e5;
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    line-height: 2;
+  }
+  .filetree .dir { color: #a5b4fc; }
+  .filetree .file { color: #86efac; }
+  .filetree .comment { color: #6b7280; }
+
+  /* ── Code Block ── */
+  .code-block {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    background: var(--fg);
+    color: #e5e5e5;
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    line-height: 1.9;
+    overflow-x: auto;
+  }
+  .code-block .prop { color: #93c5fd; }
+  .code-block .val { color: #86efac; }
+  .code-block .comment { color: #6b7280; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .container { padding: 0 20px; }
+    .topbar { padding: 0 20px; }
+    .topnav { gap: 16px; }
+    .principles-grid { grid-template-columns: 1fr; }
+    .palette-grid { grid-template-columns: repeat(2, 1fr); }
+    .component-grid { grid-template-columns: 1fr; }
+    .dndont-grid { grid-template-columns: 1fr; }
+    .format-grid { grid-template-columns: repeat(2, 1fr); }
+    .hero-meta { gap: 20px; flex-wrap: wrap; }
+    .spacing-row { grid-template-columns: 160px 70px 1fr 40px; }
+    .type-row { grid-template-columns: 140px 1fr auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top Navigation -->
+<div class="topbar">
+  <div class="topbar-inner">
+    <a href="#" class="logo">DS/01</a>
+    <nav>
+      <ul class="topnav">
+        <li><a href="#principles" class="active">Principles</a></li>
+        <li><a href="#typography">Typography</a></li>
+        <li><a href="#color">Color</a></li>
+        <li><a href="#spacing">Spacing</a></li>
+        <li><a href="#components">Components</a></li>
+        <li><a href="#formatting">Data</a></li>
+      </ul>
+    </nav>
+  </div>
+</div>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="container">
+    <p class="hero-eyebrow">Design System · v1.0</p>
+    <h1 class="hero-title">Clean.<br><em>Minimal.</em><br>Bold.</h1>
+    <p class="hero-desc">A stripped-back design language that prioritizes content clarity and reduces cognitive load. Every element earns its place through function, not decoration.</p>
+    <div class="hero-meta">
+      <div class="hero-stat">
+        <div class="hero-stat-label">Typefaces</div>
+        <div class="hero-stat-value">02</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-label">Breakpoints</div>
+        <div class="hero-stat-value">02</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-label">Max Width</div>
+        <div class="hero-stat-value">1152</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-label">Base Size</div>
+        <div class="hero-stat-value">16px</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Principles -->
+<div class="section" id="principles">
+  <div class="container">
+    <p class="section-label">01 — Principles</p>
+    <div class="principles-grid">
+      <div class="principle-card">
+        <div class="principle-num">01</div>
+        <div class="principle-title">Whitespace is a feature</div>
+        <div class="principle-desc">Generous spacing creates visual hierarchy and breathing room. Don't fight empty space — let it work for you.</div>
+      </div>
+      <div class="principle-card">
+        <div class="principle-num">02</div>
+        <div class="principle-title">Large numbers tell the story</div>
+        <div class="principle-desc">Key metrics should be immediately scannable at a glance. If it's important, make it big and monospaced.</div>
+      </div>
+      <div class="principle-card">
+        <div class="principle-num">03</div>
+        <div class="principle-title">Stack, don't sidebar</div>
+        <div class="principle-desc">Vertical flow respects natural reading patterns. Top navigation, not sidebars. Content stacks cleanly.</div>
+      </div>
+      <div class="principle-card">
+        <div class="principle-num">04</div>
+        <div class="principle-title">Monochrome with purpose</div>
+        <div class="principle-desc">Color is reserved for meaning, never decoration. Emerald = positive. Red = error. Blue = info. That's it.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Typography -->
+<div class="section" id="typography">
+  <div class="container">
+    <p class="section-label">02 — Typography</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:48px; margin-bottom:48px;">
+      <div>
+        <div style="font-size:13px; font-weight:500; margin-bottom:16px;">DM Sans</div>
+        <div style="font-size:48px; font-weight:700; letter-spacing:-0.03em; line-height:1.1; margin-bottom:12px;">Aa Bb Cc</div>
+        <div style="font-size:14px; color:var(--muted-fg);">Body, labels, UI text — weights 400, 500, 600, 700</div>
+      </div>
+      <div>
+        <div style="font-size:13px; font-weight:500; margin-bottom:16px;">Space Mono</div>
+        <div style="font-family:'Space Mono',monospace; font-size:48px; font-weight:700; letter-spacing:-0.03em; line-height:1.1; margin-bottom:12px;">0123</div>
+        <div style="font-size:14px; color:var(--muted-fg);">Numbers, code, labels — weights 400, 700</div>
+      </div>
+    </div>
+
+    <div class="type-rows">
+      <div class="type-row">
+        <div class="type-meta">
+          <div class="type-name">Stat Number</div>
+          <div class="type-class">.stat-number</div>
+        </div>
+        <div style="font-family:'Space Mono',monospace; font-size:52px; font-weight:700; letter-spacing:-0.03em; font-variant-numeric:tabular-nums;">$50,000</div>
+        <div class="type-size">52–60px / 700</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <div class="type-name">Page Title</div>
+          <div class="type-class">.page-title</div>
+        </div>
+        <div style="font-size:42px; font-weight:700; letter-spacing:-0.025em;">Dashboard</div>
+        <div class="type-size">42–48px / 700</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <div class="type-name">Stat Number (MD)</div>
+          <div class="type-class">.stat-number-md</div>
+        </div>
+        <div style="font-family:'Space Mono',monospace; font-size:38px; font-weight:700; letter-spacing:-0.02em; font-variant-numeric:tabular-nums;">142</div>
+        <div class="type-size">36–48px / 700</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <div class="type-name">Section Title</div>
+          <div class="type-class">.section-title</div>
+        </div>
+        <div style="font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted-fg);">Active Projects</div>
+        <div class="type-size">11–12px / 700 / uppercase</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <div class="type-name">Body / Labels</div>
+          <div class="type-class">default / .stat-label</div>
+        </div>
+        <div style="font-size:16px;">Project status and timeline details</div>
+        <div class="type-size">16px / 400</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Color -->
+<div class="section" id="color">
+  <div class="container">
+    <p class="section-label">03 — Color</p>
+    <div style="margin-bottom:48px;">
+      <div style="font-size:15px; font-weight:500; margin-bottom:20px;">Base Palette · Light Mode</div>
+      <div class="palette-grid">
+        <div class="swatch">
+          <div class="swatch-color" style="background:#fafafa;"></div>
+          <div class="swatch-name">Background</div>
+          <div class="swatch-value">--background</div>
+          <div class="swatch-usage">#fafafa · Page bg</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#0a0a0a;"></div>
+          <div class="swatch-name">Foreground</div>
+          <div class="swatch-value">--foreground</div>
+          <div class="swatch-usage">#0a0a0a · Primary text</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#f5f5f5;"></div>
+          <div class="swatch-name">Muted</div>
+          <div class="swatch-value">--muted</div>
+          <div class="swatch-usage">#f5f5f5 · Subtle bg</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#737373;"></div>
+          <div class="swatch-name">Muted FG</div>
+          <div class="swatch-value">--muted-foreground</div>
+          <div class="swatch-usage">#737373 · Secondary text</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#e5e5e5;"></div>
+          <div class="swatch-name">Border</div>
+          <div class="swatch-value">--border</div>
+          <div class="swatch-usage">#e5e5e5 · Dividers</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:15px; font-weight:500; margin-bottom:8px;">Semantic Colors</div>
+      <div style="font-size:14px; color:var(--muted-fg); margin-bottom:20px;">Color carries meaning. Use these consistently across the product.</div>
+      <div class="semantic-row">
+        <div class="semantic-chip">
+          <div class="semantic-dot" style="background:#059669;"></div>
+          <div class="semantic-info">
+            <span class="semantic-label">Emerald</span>
+            <span class="semantic-use">Positive values, active status</span>
+          </div>
+        </div>
+        <div class="semantic-chip">
+          <div class="semantic-dot" style="background:#dc2626;"></div>
+          <div class="semantic-info">
+            <span class="semantic-label">Red</span>
+            <span class="semantic-use">Negative values, errors, overdue</span>
+          </div>
+        </div>
+        <div class="semantic-chip">
+          <div class="semantic-dot" style="background:#2563eb;"></div>
+          <div class="semantic-info">
+            <span class="semantic-label">Blue</span>
+            <span class="semantic-use">Informational badges, phases</span>
+          </div>
+        </div>
+        <div class="semantic-chip">
+          <div class="semantic-dot" style="background:#a3a3a3;"></div>
+          <div class="semantic-info">
+            <span class="semantic-label">Neutral</span>
+            <span class="semantic-use">Inactive / default states</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:32px;">
+        <div style="font-size:15px; font-weight:500; margin-bottom:12px;">Badges</div>
+        <div class="badge-row">
+          <span class="badge badge-active">Active</span>
+          <span class="badge badge-inactive">Inactive</span>
+          <span class="badge badge-info">Phase 1</span>
+          <span class="badge badge-info">In Review</span>
+          <span class="badge badge-active">Completed</span>
+          <span class="badge badge-inactive">Archived</span>
+        </div>
+        <div style="margin-top:16px; display:flex; flex-direction:column; gap:6px;">
+          <div style="font-family:'Space Mono',monospace; font-size:12px; color:var(--muted-fg);">.badge-active → bg-emerald-100 text-emerald-800</div>
+          <div style="font-family:'Space Mono',monospace; font-size:12px; color:var(--muted-fg);">.badge-inactive → bg-neutral-100 text-neutral-600</div>
+          <div style="font-family:'Space Mono',monospace; font-size:12px; color:var(--muted-fg);">.badge-info → bg-blue-100 text-blue-800</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Spacing -->
+<div class="section" id="spacing">
+  <div class="container">
+    <p class="section-label">04 — Spacing</p>
+    <div style="font-size:15px; font-weight:500; margin-bottom:20px;">Vertical Rhythm</div>
+    <div class="spacing-rows">
+      <div class="spacing-row">
+        <div class="spacing-context">Between major sections</div>
+        <div class="spacing-class">space-y-24</div>
+        <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:100%;"></div></div>
+        <div class="spacing-px">96px</div>
+      </div>
+      <div class="spacing-row">
+        <div class="spacing-context">Stats grid gap</div>
+        <div class="spacing-class">gap-16</div>
+        <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:67%;"></div></div>
+        <div class="spacing-px">64px</div>
+      </div>
+      <div class="spacing-row">
+        <div class="spacing-context">Section title → content</div>
+        <div class="spacing-class">mb-8</div>
+        <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:33%;"></div></div>
+        <div class="spacing-px">32px</div>
+      </div>
+      <div class="spacing-row">
+        <div class="spacing-context">Table row padding</div>
+        <div class="spacing-class">py-5</div>
+        <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:21%;"></div></div>
+        <div class="spacing-px">20px</div>
+      </div>
+      <div class="spacing-row">
+        <div class="spacing-context">Page top padding</div>
+        <div class="spacing-class">py-16</div>
+        <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:67%;"></div></div>
+        <div class="spacing-px">64px</div>
+      </div>
+      <div class="spacing-row">
+        <div class="spacing-context">Container horizontal</div>
+        <div class="spacing-class">px-6</div>
+        <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:25%;"></div></div>
+        <div class="spacing-px">24px</div>
+      </div>
+    </div>
+    <div style="margin-top:32px; background:var(--muted); border-radius:var(--radius); padding:20px 24px; display:flex; align-items:center; gap:16px;">
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:var(--muted-fg);">MAX WIDTH</div>
+      <div style="font-family:'Space Mono',monospace; font-size:15px; font-weight:700;">max-w-6xl · 1152px</div>
+      <div style="width:1px; height:20px; background:var(--border);"></div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:var(--muted-fg);">H PADDING</div>
+      <div style="font-family:'Space Mono',monospace; font-size:15px; font-weight:700;">px-6 · 24px</div>
+    </div>
+  </div>
+</div>
+
+<!-- Components -->
+<div class="section" id="components">
+  <div class="container">
+    <p class="section-label">05 — Components</p>
+
+    <!-- Stats Block Example -->
+    <div style="margin-bottom:48px;">
+      <div style="font-size:15px; font-weight:500; margin-bottom:20px;">Stats Block</div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:48px; padding:40px; border:1px solid var(--border); border-radius:var(--radius-lg);">
+        <div>
+          <div style="font-family:'Space Mono',monospace; font-size:10px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted-fg); margin-bottom:8px;">Total Revenue</div>
+          <div style="font-family:'Space Mono',monospace; font-size:52px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-0.03em;">$142K</div>
+        </div>
+        <div>
+          <div style="font-family:'Space Mono',monospace; font-size:10px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted-fg); margin-bottom:8px;">Active Projects</div>
+          <div style="font-family:'Space Mono',monospace; font-size:52px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-0.03em; color:var(--emerald);">12</div>
+        </div>
+        <div>
+          <div style="font-family:'Space Mono',monospace; font-size:10px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted-fg); margin-bottom:8px;">Overdue Items</div>
+          <div style="font-family:'Space Mono',monospace; font-size:52px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-0.03em; color:var(--red);">3</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="component-grid">
+      <!-- Table Example -->
+      <div class="component-card">
+        <div class="component-preview" style="display:block; padding:24px;">
+          <table class="sample-table">
+            <thead>
+              <tr>
+                <th>Project</th>
+                <th>Status</th>
+                <th style="text-align:right;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Brand Refresh</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td class="amount">$24,000</td>
+              </tr>
+              <tr>
+                <td>Mobile App</td>
+                <td><span class="badge badge-info">Phase 2</span></td>
+                <td class="amount">$68,500</td>
+              </tr>
+              <tr>
+                <td>Annual Report</td>
+                <td><span class="badge badge-inactive">Archived</span></td>
+                <td class="amount">$12,000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="component-info">
+          <div class="component-name">Data Table</div>
+          <div class="component-desc">Minimal borders, generous row padding, uppercase headers. Numbers right-aligned with monospace.</div>
+        </div>
+      </div>
+
+      <!-- Empty State + Badge Example -->
+      <div class="component-card">
+        <div class="component-preview" style="flex-direction:column; gap:24px;">
+          <p style="font-size:14px; color:var(--muted-fg); padding: 16px 0;">No items match your filter</p>
+          <div style="border-top:1px solid var(--border); padding-top:20px; width:100%; text-align:center;">
+            <div style="font-size:12px; color:var(--muted-fg); margin-bottom:10px;">Status Badges</div>
+            <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+              <span class="badge badge-active">Active</span>
+              <span class="badge badge-info">Planning</span>
+              <span class="badge badge-inactive">On Hold</span>
+            </div>
+          </div>
+        </div>
+        <div class="component-info">
+          <div class="component-name">Empty State · Badges</div>
+          <div class="component-desc">Empty states use muted text only. Badges are pill-shaped, small, and color-coded by meaning.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Data Formatting -->
+<div class="section" id="formatting">
+  <div class="container">
+    <p class="section-label">06 — Data Formatting</p>
+    <div class="format-grid">
+      <div class="format-card">
+        <div class="format-label">Currency</div>
+        <div class="format-value">$50,000</div>
+        <div class="format-example">Intl.NumberFormat("en-US")</div>
+      </div>
+      <div class="format-card">
+        <div class="format-label">Date (Short)</div>
+        <div class="format-value" style="font-size:22px;">Jan 9, 2026</div>
+        <div class="format-example">month: short, day: numeric</div>
+      </div>
+      <div class="format-card">
+        <div class="format-label">Large Number</div>
+        <div class="format-value">1,428</div>
+        <div class="format-example">.toLocaleString()</div>
+      </div>
+    </div>
+    <div style="margin-top:20px; background:var(--muted); border-radius:var(--radius); padding:16px 20px;">
+      <div style="font-size:13px; color:var(--muted-fg);">Use <code style="font-family:'Space Mono',monospace; background:var(--border); padding:1px 5px; border-radius:3px;">font-variant-numeric: tabular-nums</code> on all stat numbers to prevent layout shift when digits change.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Do / Don't -->
+<div class="section">
+  <div class="container">
+    <p class="section-label">07 — Do's and Don'ts</p>
+    <div class="dndont-grid">
+      <div class="dndont-card do">
+        <div class="dndont-header">Do</div>
+        <ul class="dndont-list">
+          <li>Use large numbers for key metrics</li>
+          <li>Maintain consistent vertical spacing</li>
+          <li>Right-align monetary values in tables</li>
+          <li>Use monospace for all numbers and codes</li>
+          <li>Keep tables simple with minimal borders</li>
+          <li>Use color sparingly and with semantic meaning</li>
+          <li>Label above, value below in stat blocks</li>
+        </ul>
+      </div>
+      <div class="dndont-card dont">
+        <div class="dndont-header">Don't</div>
+        <ul class="dndont-list">
+          <li>Add decorative shadows, gradients, or icons</li>
+          <li>Use multiple colors without semantic meaning</li>
+          <li>Crowd content with tight spacing</li>
+          <li>Center-align data in tables</li>
+          <li>Use sidebars or complex navigation patterns</li>
+          <li>Add hover animations without clear purpose</li>
+          <li>Mix font families beyond DM Sans and Space Mono</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- File Structure + CSS Tokens -->
+<div class="section">
+  <div class="container">
+    <p class="section-label">08 — File Structure & Tokens</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start;">
+      <div>
+        <div style="font-size:15px; font-weight:500; margin-bottom:16px;">Project Structure</div>
+        <div class="filetree">
+          <div><span class="dir">src/</span></div>
+          <div>&nbsp;&nbsp;<span class="dir">layouts/</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">Layout.astro</span> <span class="comment">← base nav</span></div>
+          <div>&nbsp;&nbsp;<span class="dir">pages/</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">index.astro</span> <span class="comment">← dashboard</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">projects.astro</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">bills.astro</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">budget.astro</span></div>
+          <div>&nbsp;&nbsp;<span class="dir">styles/</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">global.css</span> <span class="comment">← tokens</span></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:15px; font-weight:500; margin-bottom:16px;">CSS Design Tokens</div>
+        <div class="code-block">
+<span class="comment">/* global.css */</span>
+:root {
+  <span class="prop">--background</span>: <span class="val">#fafafa</span>;
+  <span class="prop">--foreground</span>: <span class="val">#0a0a0a</span>;
+  <span class="prop">--muted</span>: <span class="val">#f5f5f5</span>;
+  <span class="prop">--muted-foreground</span>: <span class="val">#737373</span>;
+  <span class="prop">--border</span>: <span class="val">#e5e5e5</span>;
+  <span class="prop">--radius</span>: <span class="val">0.5rem</span>;
+}
+
+<span class="comment">/* Usage via Tailwind */</span>
+.text-muted-foreground
+.bg-muted
+.border-border
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div style="border-top:1px solid var(--border); padding:32px 0;">
+  <div class="container" style="display:flex; align-items:center; justify-content:space-between;">
+    <span style="font-family:'Space Mono',monospace; font-size:11px; color:var(--muted-fg);">DS/01 · Design System v1.0</span>
+    <span style="font-family:'Space Mono',monospace; font-size:11px; color:var(--muted-fg);">DM Sans + Space Mono · max-w-6xl</span>
+  </div>
+</div>
+
+</body>
+</html>

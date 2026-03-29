@@ -161,7 +161,14 @@ export type PhasesRecord = {
 	id: string
 	name?: string
 	order?: number
+	/** workflow = normal sequence; outcome = status/end states (not shown as “next” on the track) */
+	track?: PhasesTrackOptions
 	updated: IsoAutoDateString
+}
+
+export enum PhasesTrackOptions {
+	"workflow" = "workflow",
+	"outcome" = "outcome",
 }
 
 export type ProjectLogsRecord = {

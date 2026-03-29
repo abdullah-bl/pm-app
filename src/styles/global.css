@@ -1,40 +1,14 @@
 @import "tailwindcss";
 
-
-@font-face {
-	font-family: Rubik;
-	font-style: normal;
-	font-weight: 300 400 500 600 700 800 900;
-	font-display: swap;
-	src: url("/fonts/Rubik-VariableFont_wght.ttf") format("ttf");
-}
-
-;
-
-@font-face {
-	font-family: Rubik Italic;
-	font-style: normal;
-	font-weight: 300 400 500 600 700 800 900;
-	font-display: swap;
-	src: url("/fonts/Rubik-Italic-VariableFont_wght.ttf") format("ttf");
-}
-
-;
-
-
 @font-face {
 	font-family: 'Arshid';
 	src: url('/fonts/Arshid.otf') format('truetype');
 }
 
-;
-
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-	--font-sans: "Rubik", system-ui, sans-serif;
-	--font-sans-italic: "Rubik Italic", system-ui, sans-serif;
+	--font-sans: "DM Sans", system-ui, sans-serif;
 	--font-mono: "Space Mono", ui-monospace, monospace;
 
 	--radius-sm: calc(var(--radius) - 4px);
@@ -123,8 +97,8 @@
 	}
 
 	/* RTL Support for Arabic */
-	html[dir="rtl"] {
-		font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif;
+	html[dir="rtl"] body {
+		font-family: "Playpen Sans Arabic", system-ui, sans-serif;
 	}
 
 	html[dir="rtl"] .mono {
@@ -143,38 +117,38 @@
 	@apply text-left;
 }
 
-/* Large display numbers - scannable hero metrics */
+/* Stat Number (Large) — 52–60px, 700, mono, tabular-nums, tight tracking */
 .stat-number {
-	@apply text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight tabular-nums font-mono leading-none;
+	@apply text-4xl sm:text-5xl font-bold tracking-tight tabular-nums font-mono leading-none;
 }
 
-/* Medium stat numbers for secondary metrics */
+/* Stat Number (Medium) — 36–48px, 700, mono, tabular-nums */
 .stat-number-md {
-	@apply text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight tabular-nums font-mono leading-none;
+	@apply text-3xl sm:text-4xl font-bold tracking-tight tabular-nums font-mono leading-none;
 }
 
 .arshid {
 	font-family: 'Arshid', sans-serif;
 }
 
-/* Section title - uppercase with wide tracking */
+/* Section Title / Eyebrow — 10–12px, 700, uppercase, letter-spacing 0.15em, muted */
 .section-title {
-	@apply text-sm font-medium uppercase tracking-widest text-muted-foreground mb-8;
+	@apply text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-8;
 }
 
-/* Large page title - bold with tight tracking */
+/* Page Title — 42–48px, 700, letter-spacing -0.025em */
 .page-title {
-	@apply text-4xl md:text-5xl font-bold tracking-tight leading-tight;
+	@apply text-[42px] sm:text-5xl font-bold tracking-[-0.025em] leading-[1.1];
 }
 
 /* Page subtitle */
 .page-subtitle {
-	@apply text-lg text-muted-foreground mt-3;
+	@apply text-lg text-muted-foreground mt-3 max-w-[520px];
 }
 
-/* Stat label - positioned above stat numbers */
+/* Stat label — 16px, 400, placed above value */
 .stat-label {
-	@apply text-base text-muted-foreground mb-3 block;
+	@apply text-base text-muted-foreground mb-2 block;
 }
 
 /* Subtle label */
@@ -182,13 +156,13 @@
 	@apply text-base text-muted-foreground;
 }
 
-/* Table styling - generous vertical padding for readability */
+/* Data Tables */
 .data-table {
 	@apply w-full;
 }
 
 .data-table th {
-	@apply text-left text-sm font-medium uppercase tracking-widest text-muted-foreground pb-5 border-b border-border;
+	@apply text-left text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground pb-4 border-b border-border whitespace-nowrap;
 }
 
 .data-table td {
@@ -204,14 +178,19 @@
 	@apply cursor-pointer transition-colors hover:bg-muted/50;
 }
 
-/* Mono numbers - for tabular alignment */
+/* Responsive table wrapper */
+.table-scroll {
+	@apply overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0;
+}
+
+/* Mono numbers — for tabular alignment */
 .mono {
 	@apply font-mono tabular-nums;
 }
 
-/* Status badges - small pill-shaped indicators */
+/* Status badges — small pill-shaped indicators */
 .badge {
-	@apply inline-flex items-center px-2.5 py-1 font-medium text-base rounded-full;
+	@apply inline-flex items-center px-3 py-1 font-medium text-lg rounded-full;
 }
 
 .badge-active {
@@ -244,32 +223,45 @@
 	@apply w-full;
 }
 
-.phase-timeline {
-	@apply flex items-start w-full;
+/* Previous | current | next (workflow track) */
+.phase-triple {
+	@apply flex items-start justify-center w-full max-w-2xl mx-auto gap-1 sm:gap-2 pt-1;
 }
 
-.phase-item {
-	@apply flex-1 flex items-start relative min-w-0;
+.phase-triple-slot {
+	@apply flex-1 min-w-0 flex flex-col items-center;
 }
 
-.phase-item:last-child {
-	@apply flex-none;
+.phase-triple-slot-current {
+	@apply shrink-0;
 }
 
-.phase-connector {
-	@apply flex-1 h-0.5 bg-border mt-3 mx-1;
+.phase-triple-bar {
+	@apply w-6 sm:w-10 shrink-0 h-0.5 mt-[0.8125rem] rounded-full;
 }
 
-.phase-connector-completed {
-	@apply bg-emerald-500;
+.phase-triple-bar-done {
+	@apply bg-emerald-600;
+}
+
+.phase-triple-bar-upcoming {
+	@apply bg-border;
+}
+
+.phase-triple-bar-muted {
+	@apply bg-border/70;
+}
+
+.phase-dot-placeholder {
+	@apply w-6 h-6 rounded-full border-2 border-dashed border-foreground/20 bg-transparent shrink-0;
 }
 
 .phase-content {
-	@apply flex flex-col items-center gap-2;
+	@apply flex flex-col items-center gap-2.5 max-w-[7.25rem] px-0.5;
 }
 
 .phase-dot-completed {
-	@apply w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0;
+	@apply w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center shrink-0;
 }
 
 .phase-dot-current-wrapper {
@@ -277,12 +269,12 @@
 }
 
 .phase-dot-current-ring {
-	@apply absolute w-10 h-10 rounded-full border-4 border-emerald-500/30;
+	@apply absolute w-10 h-10 rounded-full border-[3px] border-emerald-500/35;
 	animation: pulse-ring 2s ease-out infinite;
 }
 
 .phase-dot-current {
-	@apply w-6 h-6 rounded-full bg-emerald-500;
+	@apply w-6 h-6 rounded-full bg-emerald-600;
 }
 
 @keyframes pulse-ring {
@@ -297,24 +289,31 @@
 	}
 }
 
+@media (prefers-reduced-motion: reduce) {
+	.phase-dot-current-ring {
+		animation: none;
+		@apply opacity-60 border-emerald-500/25;
+	}
+}
+
 .phase-dot-future {
-	@apply w-4 h-4 rounded-full border-2 border-border bg-background shrink-0;
+	@apply w-[1.125rem] h-[1.125rem] rounded-full border-2 border-foreground/20 bg-background shrink-0 mt-px;
 }
 
 .phase-label {
-	@apply text-[10px] text-muted-foreground whitespace-nowrap transition-colors text-center leading-tight;
+	@apply text-xs text-foreground/70 text-center leading-snug transition-colors line-clamp-2;
 }
 
 .phase-label-completed {
-	@apply text-foreground/80;
+	@apply text-foreground/88 font-medium;
 }
 
 .phase-label-current {
-	@apply font-semibold text-xs text-emerald-600;
+	@apply font-semibold text-emerald-700;
 }
 
-.phase-more {
-	@apply w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0;
+.phase-label-placeholder {
+	@apply text-foreground/45;
 }
 
 /* Files Grid */

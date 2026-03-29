@@ -15,6 +15,7 @@ export const ui = {
     "nav.payments": "Payments",
     "nav.budget": "Budget",
     "nav.search": "Search",
+    "nav.chat": "Chat",
 
     // Dashboard
     "dashboard.title": "Dashboard",
@@ -38,6 +39,12 @@ export const ui = {
     "budget.obligatedCost": "Obligated Cost",
     "budget.remainingCash": "Remaining Cash",
     "budget.remainingCost": "Remaining Cost",
+    "budget.updatedCash": "Updated Cash",
+    "budget.allocation": "Budget allocation",
+    "budget.afterTransfers": "After transfers",
+    "budget.freeBalance": "Free balance",
+    "budget.overObligated": "Over-obligated",
+    "budget.unpaidObligations": "Unpaid obligations",
     "budget.payments": "Payments",
     "budget.obligations": "Obligations",
     "budget.transactions": "transactions",
@@ -121,6 +128,11 @@ export const ui = {
     "budget.netTransfer": "Net Transfer",
     "budget.adjusted": "Adjusted",
 
+    // Chat
+    "chat.title": "Chat",
+    "chat.subtitle": "Chat with your AI assistant",
+    "chat.backLabel": "Home",
+
     // Auth
     "auth.login": "Login",
     "auth.logout": "Logout",
@@ -161,6 +173,10 @@ export const ui = {
     "detail.transfers": "Transfers",
     "detail.noTransfers": "No transfers",
     "detail.projectPhases": "Project Phases",
+    "detail.phaseSlotPrevious": "Previous phase",
+    "detail.phaseSlotCurrent": "Current phase",
+    "detail.phaseSlotNext": "Next phase on track",
+    "detail.phaseTimelineEmpty": "—",
     "detail.filesAttachments": "Files & Attachments",
     "detail.noFiles": "No files attached",
     "detail.activityLog": "Activity Log",
@@ -176,6 +192,7 @@ export const ui = {
     "nav.payments": "المدفوعات",
     "nav.budget": "الميزانية",
     "nav.search": "بحث",
+    "nav.chat": "المحادثة",
 
     // Dashboard
     "dashboard.title": "لوحة التحكم",
@@ -199,6 +216,12 @@ export const ui = {
     "budget.obligatedCost": "المخصص من التكلفة",
     "budget.remainingCash": "الرصيد النقدي المتبقي",
     "budget.remainingCost": "التكلفة المتبقية",
+    "budget.updatedCash": "النقدية المحدّثة",
+    "budget.allocation": "الاعتماد الميزانياتي",
+    "budget.afterTransfers": "بعد التحويلات",
+    "budget.freeBalance": "الرصيد الحر",
+    "budget.overObligated": "تجاوز الالتزامات",
+    "budget.unpaidObligations": "الالتزامات غير المدفوعة",
     "budget.payments": "المدفوعات",
     "budget.obligations": "الالتزامات المالية",
     "budget.transactions": "المعاملات",
@@ -282,6 +305,11 @@ export const ui = {
     "budget.netTransfer": "صافي التحويلات",
     "budget.adjusted": "التعديل",
 
+    // Chat
+    "chat.title": "المحادثة",
+    "chat.subtitle": "تحدث مع مساعدك الذكي",
+    "chat.backLabel": "الرئيسية",
+
     // Auth
     "auth.login": "تسجيل الدخول",
     "auth.logout": "تسجيل الخروج",
@@ -322,6 +350,10 @@ export const ui = {
     "detail.transfers": "التحويلات المالية",
     "detail.noTransfers": "لا توجد تحويلات مسجلة",
     "detail.projectPhases": "مراحل المشروع",
+    "detail.phaseSlotPrevious": "المرحلة السابقة",
+    "detail.phaseSlotCurrent": "المرحلة الحالية",
+    "detail.phaseSlotNext": "المرحلة التالية في المسار",
+    "detail.phaseTimelineEmpty": "—",
     "detail.filesAttachments": "الملفات والمرفقات",
     "detail.noFiles": "لا توجد ملفات مرفقة",
     "detail.activityLog": "سجل النشاط",

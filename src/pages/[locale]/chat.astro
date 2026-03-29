@@ -1,0 +1,22 @@
+---
+import AILayout from "@/layouts/AILayout.astro";
+import PageHeader from "@/components/PageHeader.astro";
+import { Chat as ChatWidget } from "@/components/Chat";
+import { getLangFromUrl, useTranslations } from "@/i18n/utils";
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+
+<AILayout>
+    <div class="min-h-screen overflow-hidden">
+        <PageHeader
+            title={t("chat.title")}
+            subtitle={t("chat.subtitle")}
+            backHref={`/${lang}`}
+            backLabel={t("chat.backLabel")}
+        />
+
+        <ChatWidget client:load />
+    </div>
+</AILayout>

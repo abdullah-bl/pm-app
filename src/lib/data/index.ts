@@ -2,7 +2,13 @@
 
 export * from "./expand-types";
 export * from "./projects";
-export * from "./phases";
+export {
+	getPhases,
+	getPhaseById,
+	getPhaseTimelineTriple,
+	isWorkflowPhase,
+	type PhaseTimelineTriple,
+} from "./phases";
 export * from "./budgets";
 export * from "./obligations";
 export * from "./payments";

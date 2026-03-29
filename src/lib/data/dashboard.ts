@@ -7,6 +7,7 @@ import type {
   ObligationWithExpand,
   PaymentWithExpand,
   ProjectWithExpand,
+  TransferWithExpand,
 } from "./expand-types";
 
 export interface DashboardData {
@@ -14,9 +15,11 @@ export interface DashboardData {
   budgetItems: BudgetItemsResponse[];
   obligations: ObligationWithExpand[];
   payments: PaymentWithExpand[];
+  transfers: TransferWithExpand[];
   plannedPayments: PaymentWithExpand[];
   yearObligations: ObligationWithExpand[];
   yearPayments: PaymentWithExpand[];
+  yearTransfers: TransferWithExpand[];
   // Calculated values
   totalBudgetCash: number;
   totalBudgetCost: number;
@@ -25,6 +28,13 @@ export interface DashboardData {
   totalPaid: number;
   totalPlanned: number;
   totalProjectValue: number;
+  /** Transfers where `to` is undefined — cash that physically exited the budget system */
+  cashOutTransfers: number;
+  /** Transfers where `from` is undefined — cash that physically entered the budget system */
+  cashInTransfers: number;
+  /** Updated cash: Budget − Transfers Out − Transfers In */
+  updatedCash?: number;
+  /** Remaining cash: Updated Cash − Obligated − Paid */
   budgetRemainingCash: number;
   budgetRemainingCost: number;
 }
@@ -37,12 +47,12 @@ export async function getDashboardData(
   year: number = new Date().getFullYear()
 ): Promise<DashboardData> {
   return cache.getOrFetch(
-    cacheKey(pb, "dashboard", String(year)),
+    cacheKey(pb, "dashboard_v2", String(year)),
     async () => {
       const yearStart = `${year}-01-01`;
       const yearEnd = `${year}-12-31`;
 
-      const [projects, budgetItems, obligations, payments] = await Promise.all([
+      const [projects, budgetItems, obligations, payments, transfers] = await Promise.all([
         pb.collection("projects").getFullList<ProjectWithExpand>({
           sort: "-created",
           filter: "active=true",
@@ -59,6 +69,10 @@ export async function getDashboardData(
           sort: "-created",
           expand: "project,obligation",
         }),
+        pb.collection("transfers").getFullList<TransferWithExpand>({
+          sort: "-created",
+          expand: "from,to",
+        }),
       ]);
 
       // Filter data for current year
@@ -69,6 +83,11 @@ export async function getDashboardData(
 
       const yearPayments = payments.filter((p) => {
         const date = p.created;
+        return date >= yearStart && date <= yearEnd;
+      });
+
+      const yearTransfers = transfers.filter((t) => {
+        const date = t.created;
         return date >= yearStart && date <= yearEnd;
       });
 
@@ -100,17 +119,34 @@ export async function getDashboardData(
         .reduce((sum, p) => sum + (p.amount || 0), 0);
       const totalPlanned = plannedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
       const totalProjectValue = projects.reduce((sum, p) => sum + (p.total || 0), 0);
-      const budgetRemainingCash = totalBudgetCash - totalObligatedCash;
       const budgetRemainingCost = totalBudgetCost - totalObligatedCost;
+
+      // Transfers where `to` is undefined/empty = cash that physically left the budget system
+      const cashOutTransfers = yearTransfers
+        .filter(t => !t.to)
+        .reduce((sum, t) => sum + (t.cash || 0), 0);
+
+      // Transfers where `from` is undefined/empty = cash that physically entered the budget system
+      const cashInTransfers = yearTransfers
+        .filter(t => !t.from)
+        .reduce((sum, t) => sum + (t.cash || 0), 0);
+
+      // Step 1: Updated Cash = Budget − all transfers (both in and out are budget movements)
+      // Step 2: Remaining Cash = Updated Cash − (Obligated − Paid)
+      // Paid is already included in obligations, so subtract only unpaid portion
+      const updatedCash = totalBudgetCash - cashOutTransfers - cashInTransfers;
+      const budgetRemainingCash = updatedCash - totalObligatedCash + totalPaid;
 
       return {
         projects,
         budgetItems,
         obligations,
         payments,
+        transfers,
         plannedPayments,
         yearObligations,
         yearPayments,
+        yearTransfers,
         totalBudgetCash,
         totalBudgetCost,
         totalObligatedCash,
@@ -118,6 +154,8 @@ export async function getDashboardData(
         totalPaid,
         totalPlanned,
         totalProjectValue,
+        cashOutTransfers,
+        cashInTransfers,
         budgetRemainingCash,
         budgetRemainingCost,
       };

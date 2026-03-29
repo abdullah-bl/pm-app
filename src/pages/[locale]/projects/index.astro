@@ -1,5 +1,10 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import PageHeader from "@/components/PageHeader.astro";
+import StatsGrid from "@/components/StatsGrid.astro";
+import StatItem from "@/components/StatItem.astro";
+import EmptyState from "@/components/EmptyState.astro";
+import PhaseBadge from "@/components/PhaseBadge.astro";
 import {
 	getLangFromUrl,
 	useTranslations,
@@ -46,22 +51,14 @@ const basePath = getLocalizedPath("/projects", lang);
 ---
 
 <Layout>
-	<div class="space-y-24">
+	<div class="space-y-10 md:space-y-20">
 		<!-- Header with Filters -->
-		<section>
-			<div class="flex items-start justify-between gap-4 flex-wrap">
-				<div>
-					<h1 class="page-title">{t("projects.title")}</h1>
-					<p class="page-subtitle">
-						{t("projects.subtitle")}
-					</p>
-				</div>
-			</div>
+		<PageHeader title={t("projects.title")} subtitle={t("projects.subtitle")} />
 
 			<!-- Filters -->
 			<form
 				id="filters"
-				class="flex flex-wrap items-center gap-6 mt-8 pt-6 border-t border-border"
+				class="flex flex-wrap items-center gap-3 sm:gap-6 mt-6 pt-5 border-t border-border"
 			>
 				<div class="flex items-center gap-3">
 					<label
@@ -170,27 +167,13 @@ const basePath = getLocalizedPath("/projects", lang);
 						});
 					});
 			</script>
-		</section>
 
 		<!-- Stats -->
-		<section>
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
-				<div>
-					<span class="stat-label">{t("projects.showing")}</span>
-					<p class="stat-number">{projects.length}</p>
-				</div>
-				<div>
-					<span class="stat-label">{t("projects.active")}</span>
-					<p class="stat-number text-emerald-600">{activeCount}</p>
-				</div>
-				<div>
-					<span class="stat-label">{t("projects.totalValue")}</span>
-					<p class="stat-number arshid">
-						{formatCurrency(totalValue, lang)}
-					</p>
-				</div>
-			</div>
-		</section>
+		<StatsGrid columns={3}>
+			<StatItem label={t("projects.showing")} value={projects.length} />
+			<StatItem label={t("projects.active")} value={activeCount} variant="positive" />
+			<StatItem label={t("projects.totalValue")} value={formatCurrency(totalValue, lang)} mono />
+		</StatsGrid>
 
 		<!-- Projects List -->
 		<section>
@@ -198,105 +181,70 @@ const basePath = getLocalizedPath("/projects", lang);
 
 			{
 				projects.length === 0 ? (
-					<p class="text-muted-foreground py-12 text-center">
-						{t("projects.noProjectsFound")}
-					</p>
+					<EmptyState message={t("projects.noProjectsFound")} />
 				) : (
-					<table class="data-table">
-						<thead>
-							<tr>
-								<th>{t("table.ref")}</th>
-								<th>{t("table.project")}</th>
-								<th>{t("table.amount")}</th>
-								<th>{t("table.phase")}</th>
-								<th>{t("table.status")}</th>
-							</tr>
-						</thead>
-						<tbody>
-							{projects.map((project) => (
-								<tr
-									class="clickable"
-									onclick={`window.location.href='${getLocalizedPath(`/projects/${project.id}`, lang)}'`}
-								>
-									<td class="mono text-muted-foreground text-center">
-										{project.slug || project.ref}
-									</td>
-									<td class="align-middle">
-										<p class="font-medium text-base">
-											{project.name}
-										</p>
-									</td>
-									<td class="arshid">
-										{formatCurrency(
-											project.total || 0,
-											lang,
-										)}
-									</td>
-									<td class="align-middle">
-										{project.expand?.phase ? (
-											<span
-												class="badge"
-												style={`background-color: ${project.expand.phase.color}20; color: ${project.expand.phase.color};`}
-											>
-												{project.expand.phase.name}
-											</span>
-										) : (
-											<span class="text-muted-foreground">
-												—
-											</span>
-										)}
-									</td>
-
-									{/* <td class="align-middle">
-										{project.expand?.assignee &&
-										project.expand.assignee.length > 0 ? (
-											<div class="flex -space-x-2">
-												{project.expand.assignee
-													.slice(0, 3)
-													.map((user) => (
-														<div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium border-2 border-background">
-															{user.name?.charAt(
-																0,
-															) ||
-																user.email?.charAt(
-																	0,
-																)}
-														</div>
-													))}
-												{project.expand.assignee
-													.length > 3 && (
-													<div class="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium border-2 border-background">
-														+
-														{project.expand.assignee
-															.length - 3}
-													</div>
-												)}
-											</div>
-										) : (
-											<span class="text-muted-foreground">
-												—
-											</span>
-										)}
-									</td> */}
-									<td class="text-right align-middle">
-										<span
-											class:list={[
-												"status-dot",
-												project.active
-													? "status-dot-active"
-													: "status-dot-inactive",
-											]}
-											title={
-												project.active
-													? t("filter.active")
-													: t("filter.inactive")
-											}
-										/>
-									</td>
+					<div class="table-scroll">
+						<table class="data-table min-w-full">
+							<thead>
+								<tr>
+									<th class="hidden sm:table-cell">{t("table.ref")}</th>
+									<th>{t("table.project")}</th>
+									<th class="text-right">{t("table.amount")}</th>
+									<th class="hidden sm:table-cell">{t("table.phase")}</th>
+									<th class="hidden sm:table-cell text-right">{t("table.status")}</th>
 								</tr>
-							))}
-						</tbody>
-					</table>
+							</thead>
+							<tbody>
+								{projects.map((project) => (
+									<tr
+										class="clickable"
+										onclick={`window.location.href='${getLocalizedPath(`/projects/${project.id}`, lang)}'`}
+									>
+										<td class="hidden sm:table-cell mono text-muted-foreground">
+											{project.slug || project.ref}
+										</td>
+										<td class="align-middle">
+											<p class="font-medium text-base leading-snug">
+												{project.name}
+											</p>
+											<p class="mono text-xs text-muted-foreground mt-0.5 sm:hidden">
+												{project.slug || project.ref}
+											</p>
+											{project.expand?.phase && (
+												<span class="sm:hidden mt-1.5">
+													<PhaseBadge phase={project.expand.phase} />
+												</span>
+											)}
+										</td>
+										<td class="text-right arshid align-middle whitespace-nowrap">
+											{formatCurrency(
+												project.total || 0,
+												lang,
+											)}
+										</td>
+										<td class="hidden sm:table-cell align-middle">
+											<PhaseBadge phase={project.expand?.phase} />
+										</td>
+										<td class="hidden sm:table-cell text-right align-middle">
+											<span
+												class:list={[
+													"status-dot",
+													project.active
+														? "status-dot-active"
+														: "status-dot-inactive",
+												]}
+												title={
+													project.active
+														? t("filter.active")
+														: t("filter.inactive")
+												}
+											/>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
 				)
 			}
 		</section>

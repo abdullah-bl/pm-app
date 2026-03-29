@@ -1,0 +1,47 @@
+---
+interface Props {
+	value: number;
+	max: number;
+	height?: "sm" | "md" | "lg";
+	color?: "emerald" | "amber" | "foreground" | "muted" | "auto";
+	label?: string;
+	showPercent?: boolean;
+	formatValue?: string;
+}
+
+const { value, max, height = "md", color = "auto", label, showPercent = false, formatValue } = Astro.props;
+
+const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+
+const heightClass = {
+	sm: "h-1.5",
+	md: "h-2",
+	lg: "h-3",
+}[height];
+
+const colorClass = color === "auto"
+	? (pct > 100 ? "bg-destructive" : pct > 80 ? "bg-amber-500" : "bg-foreground")
+	: {
+		emerald: "bg-emerald-600",
+		amber: "bg-amber-500",
+		foreground: "bg-foreground",
+		muted: "bg-muted-foreground",
+	}[color];
+---
+
+{(label || showPercent) && (
+	<div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+		{label && <span class="text-xs uppercase tracking-widest text-muted-foreground">{label}</span>}
+		{showPercent && (
+			<span class="text-xs font-mono tabular-nums text-muted-foreground">
+				{formatValue ? `${formatValue} (${pct.toFixed(1)}%)` : `${pct.toFixed(1)}%`}
+			</span>
+		)}
+	</div>
+)}
+<div class:list={["bg-muted rounded-full overflow-hidden", heightClass]}>
+	<div
+		class:list={["h-full rounded-full transition-all", colorClass]}
+		style={`width: ${Math.min(pct, 100)}%`}
+	/>
+</div>

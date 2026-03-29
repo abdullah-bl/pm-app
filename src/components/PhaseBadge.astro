@@ -1,0 +1,18 @@
+---
+interface Props {
+	phase?: { name?: string; color?: string } | null;
+}
+
+const { phase } = Astro.props;
+---
+
+{phase?.name ? (
+	<span
+		class="badge"
+		style={phase.color ? `background-color: ${phase.color}20; color: ${phase.color};` : undefined}
+	>
+		{phase.name}
+	</span>
+) : (
+	<span class="text-muted-foreground">—</span>
+)}

@@ -6,6 +6,7 @@ import StatItem from "@/components/StatItem.astro";
 import DetailSection from "@/components/DetailSection.astro";
 import DetailCard from "@/components/DetailCard.astro";
 import EmptyState from "@/components/EmptyState.astro";
+import PhaseBadge from "@/components/PhaseBadge.astro";
 import {
 	getLangFromUrl,
 	useTranslations,
@@ -15,6 +16,7 @@ import {
 } from "@/i18n/utils";
 import {
 	getProjectWithDetails,
+	getPhaseTimelineTriple,
 	type ProjectWithExpand,
 } from "@/lib/data";
 
@@ -99,116 +101,144 @@ const backPath = getLocalizedPath("/projects", lang);
 					</div>
 				</PageHeader>
 
-				{/* Phases Timeline */}
+				{/* Phases: previous → current → next (workflow only; outcomes are not “next”) */}
 				{allPhases.length > 0 &&
 					(() => {
-						const currentIndex = allPhases.findIndex(
-							(p) => p.id === project.phase,
+						const phaseRef =
+							project.phase ?? project.expand?.phase?.id;
+						let triple = getPhaseTimelineTriple(
+							allPhases,
+							phaseRef,
 						);
-						const startIndex = Math.max(0, currentIndex - 3);
-						const endIndex = Math.min(
-							allPhases.length - 1,
-							currentIndex + 3,
-						);
-						const visiblePhases = allPhases.slice(
-							startIndex,
-							endIndex + 1,
-						);
-						const hasMoreBefore = startIndex > 0;
-						const hasMoreAfter = endIndex < allPhases.length - 1;
+						if (!triple.current && project.expand?.phase?.id) {
+							triple = getPhaseTimelineTriple(
+								allPhases,
+								project.expand.phase.id,
+							);
+						}
+						const displayCurrent =
+							triple.current ?? project.expand?.phase ?? null;
+						if (!displayCurrent) return null;
+
+						const { prev, next } = triple;
 
 						return (
 							<div class="phase-timeline-wrapper">
-								<p class="section-title">
+								<p class="section-title" id="phase-timeline-heading">
 									{t("detail.projectPhases")}
 								</p>
-								<div class="phase-timeline">
-									{hasMoreBefore && (
-										<div class="phase-more">
-											<span class="text-muted-foreground text-xs">
-												+{startIndex}
+								<div
+									class="phase-triple"
+									role="group"
+									aria-labelledby="phase-timeline-heading"
+								>
+									<div
+										class="phase-triple-slot"
+										aria-label={t("detail.phaseSlotPrevious")}
+									>
+										<div class="phase-content">
+											{prev ? (
+												<>
+													<div class="phase-dot-completed">
+														<svg
+															xmlns="http://www.w3.org/2000/svg"
+															width="10"
+															height="10"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="3"
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															class="text-white"
+															aria-hidden="true"
+															focusable="false"
+														>
+															<polyline points="20 6 9 17 4 12" />
+														</svg>
+													</div>
+													<span class="phase-label phase-label-completed">
+														{prev.name}
+													</span>
+												</>
+											) : (
+												<>
+													<div
+														class="phase-dot-placeholder"
+														aria-hidden="true"
+													/>
+													<span class="phase-label phase-label-placeholder">
+														{t("detail.phaseTimelineEmpty")}
+													</span>
+												</>
+											)}
+										</div>
+									</div>
+
+									<div
+										class:list={[
+											"phase-triple-bar",
+											prev
+												? "phase-triple-bar-done"
+												: "phase-triple-bar-muted",
+										]}
+										aria-hidden="true"
+									/>
+
+									<div
+										class="phase-triple-slot phase-triple-slot-current"
+										aria-label={t("detail.phaseSlotCurrent")}
+										aria-current="step"
+									>
+										<div class="phase-content">
+											<div class="phase-dot-current-wrapper">
+												<div class="phase-dot-current-ring" />
+												<div class="phase-dot-current" />
+											</div>
+											<span class="phase-label phase-label-current">
+												{displayCurrent.name}
 											</span>
 										</div>
-									)}
-									{visiblePhases.map((phase, idx) => {
-										const actualIndex = startIndex + idx;
-										const isCurrent =
-											project.phase === phase.id;
-										const isPast =
-											actualIndex < currentIndex;
-										const isFirst = idx === 0;
-										return (
-											<div class="phase-item">
-												{/* Connector line */}
-												{!isFirst && (
+									</div>
+
+									<div
+										class:list={[
+											"phase-triple-bar",
+											next
+												? "phase-triple-bar-upcoming"
+												: "phase-triple-bar-muted",
+										]}
+										aria-hidden="true"
+									/>
+
+									<div
+										class="phase-triple-slot"
+										aria-label={t("detail.phaseSlotNext")}
+									>
+										<div class="phase-content">
+											{next ? (
+												<>
 													<div
-														class:list={[
-															"phase-connector",
-															isPast &&
-																"phase-connector-completed",
-															isCurrent &&
-																"phase-connector-completed",
-														]}
+														class="phase-dot-future"
+														aria-hidden="true"
 													/>
-												)}
-												{hasMoreBefore && isFirst && (
-													<div class="phase-connector phase-connector-completed" />
-												)}
-												{/* Phase dot and label */}
-												<div class="phase-content">
-													{isCurrent ? (
-														<div class="phase-dot-current-wrapper">
-															<div class="phase-dot-current-ring" />
-															<div class="phase-dot-current" />
-														</div>
-													) : isPast ? (
-														<div class="phase-dot-completed">
-															<svg
-																xmlns="http://www.w3.org/2000/svg"
-																width="10"
-																height="10"
-																viewBox="0 0 24 24"
-																fill="none"
-																stroke="currentColor"
-																stroke-width="3"
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																class="text-white"
-															>
-																<polyline points="20 6 9 17 4 12" />
-															</svg>
-														</div>
-													) : (
-														<div class="phase-dot-future" />
-													)}
-													<span
-														class:list={[
-															"phase-label",
-															isCurrent &&
-																"phase-label-current",
-															isPast &&
-																"phase-label-completed",
-														]}
-													>
-														{phase.name}
+													<span class="phase-label">
+														{next.name}
 													</span>
-												</div>
-											</div>
-										);
-									})}
-									{hasMoreAfter && (
-										<>
-											<div class="phase-connector" />
-											<div class="phase-more">
-												<span class="text-muted-foreground text-xs">
-													+
-													{allPhases.length -
-														1 -
-														endIndex}
-												</span>
-											</div>
-										</>
-									)}
+												</>
+											) : (
+												<>
+													<div
+														class="phase-dot-placeholder"
+														aria-hidden="true"
+													/>
+													<span class="phase-label phase-label-placeholder">
+														{t("detail.phaseTimelineEmpty")}
+													</span>
+												</>
+											)}
+										</div>
+									</div>
 								</div>
 							</div>
 						);
@@ -612,4 +642,5 @@ const backPath = getLocalizedPath("/projects", lang);
 			</div>
 		)
 	}
+
 </Layout>

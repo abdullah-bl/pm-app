@@ -1,0 +1,62 @@
+---
+import { getLangFromUrl, useTranslations, formatCurrency } from "@/i18n/utils";
+import ProgressBar from "./ProgressBar.astro";
+
+interface Props {
+	total: number;
+	obligated: number;
+	remaining: number;
+	spent: number;
+	transfersOut: number;
+	lang?: string;
+}
+
+const { total, obligated, remaining, spent, transfersOut, lang: langProp } = Astro.props;
+const lang = langProp || getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+
+<div class="border border-border rounded-xl p-6 md:p-10">
+	<!-- Three big stats -->
+	<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6">
+		<div>
+			<p class="text-sm text-muted-foreground mb-1">{t("budget.total")}</p>
+			<p class="text-2xl md:text-3xl font-bold arshid tabular-nums">{formatCurrency(total, lang)}</p>
+		</div>
+		<div>
+			<p class="text-sm text-muted-foreground mb-1">{t("budget.totalObligated")}</p>
+			<p class="text-2xl md:text-3xl font-bold arshid tabular-nums">{formatCurrency(obligated, lang)}</p>
+		</div>
+		<div>
+			<p class="text-sm text-muted-foreground mb-1">{t("budget.totalRemaining")}</p>
+			<p class:list={["text-2xl md:text-3xl font-bold arshid tabular-nums", remaining < 0 ? "text-destructive" : "text-emerald-600"]}>
+				{formatCurrency(remaining, lang)}
+			</p>
+		</div>
+	</div>
+
+	<!-- Progress bars -->
+	<div class="space-y-4">
+		<ProgressBar
+			value={obligated}
+			max={total}
+			label={t("budget.utilization")}
+		/>
+		<ProgressBar
+			value={spent}
+			max={total}
+			color="emerald"
+			label={t("common.spent")}
+			showPercent
+			formatValue={formatCurrency(spent, lang)}
+		/>
+		<ProgressBar
+			value={transfersOut}
+			max={total}
+			color="amber"
+			label={t("budget.transfersOut")}
+			showPercent
+			formatValue={formatCurrency(transfersOut, lang)}
+		/>
+	</div>
+</div>

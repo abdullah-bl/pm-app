@@ -1,0 +1,28 @@
+---
+import { getLangFromUrl, useTranslations } from "@/i18n/utils";
+
+interface Props {
+	status?: "planned" | "pending" | "paid" | string;
+	lang?: string;
+}
+
+const { status, lang: langProp } = Astro.props;
+const lang = langProp || getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const variantClass = {
+	paid: "badge-success",
+	pending: "badge-info",
+	planned: "badge-warning",
+}[status || ""] || "badge-inactive";
+
+const label = {
+	paid: t("payments.paid"),
+	pending: t("payments.pending"),
+	planned: t("payments.planned"),
+}[status || ""] || status;
+---
+
+<span class:list={["badge text-xs", variantClass]}>
+	{label}
+</span>
